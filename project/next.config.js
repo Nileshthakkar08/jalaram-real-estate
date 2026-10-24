@@ -7,6 +7,9 @@ const apiOrigin = process.env.API_PROXY_TARGET || 'http://127.0.0.1:8000';
 const nextConfig = {
   // Lets a production build run without touching a running dev server's .next folder.
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Netlify's cache revalidates pages with conditional requests; if Next answers 304 the
+  // edge stores that empty 304 as the page and serves blank pages. Never emit ETags/304s.
+  generateEtags: false,
   eslint: {
     ignoreDuringBuilds: true,
   },
