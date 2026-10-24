@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Forest green #173C32 → hsl(142, 38%, 16%) */
+    --primary: 142 38% 16%;
+    --primary-foreground: 40 44% 95%;
+
+    /* Warm gold #B49756 → hsl(42, 36%, 53%) */
+    --accent: 42 36% 53%;
+    --accent-foreground: 142 38% 16%;
+
+    /* Warm neutral background */
+    --background: 40 30% 98%;
+    --foreground: 20 14% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 14% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14% 18%;
+
+    /* Secondary — light warm neutral */
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 142 38% 16%;
+
+    --muted: 40 14% 93%;
+    --muted-foreground: 20 8% 45%;
+
+    /* Success — green */
+    --success: 142 40% 30%;
+    --success-foreground: 40 44% 95%;
+
+    /* Warning — amber */
+    --warning: 38 80% 50%;
+    --warning-foreground: 20 14% 18%;
+
+    /* Destructive — red */
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 40 14% 90%;
+    --input: 40 14% 88%;
+    --ring: 42 36% 53%;
+
+    --chart-1: 142 38% 30%;
+    --chart-2: 42 36% 53%;
+    --chart-3: 200 60% 45%;
+    --chart-4: 28 80% 55%;
+    --chart-5: 0 65% 50%;
+
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .container-px {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  .container-mw {
+    @apply mx-auto max-w-7xl;
+  }
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+  .animation-fill-backwards {
+    animation-fill-mode: backwards;
+  }
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
