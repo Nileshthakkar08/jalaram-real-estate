@@ -5,6 +5,9 @@ import { AuthCard } from '@/components/auth/auth-card';
 import { LoadingState } from '@/components/shared/states';
 import { VerifyEmail } from '@/components/auth/verify-email';
 
+// Never cache auth pages at the CDN: they depend on query params (redirect, reset token).
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = { title: 'Verify your email', robots: { index: false } };
 
 export default function VerifyEmailPage() {

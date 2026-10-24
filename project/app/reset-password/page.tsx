@@ -6,6 +6,9 @@ import { AuthCard } from '@/components/auth/auth-card';
 import { LoadingState } from '@/components/shared/states';
 import { ResetPasswordForm } from '@/components/auth/password-forms';
 
+// Never cache auth pages at the CDN: they depend on query params (redirect, reset token).
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = { title: 'Choose a new password', robots: { index: false } };
 
 export default function ResetPasswordPage() {
