@@ -21,6 +21,8 @@ interface PropertyFormProps {
   staff?: boolean;
 }
 
+const OTHER = 'other';
+
 const numberOrNull = (v: FormDataEntryValue | null) => (v === null || v === '' ? null : Number(v));
 const textOrNull = (v: FormDataEntryValue | null) => (v === null || String(v).trim() === '' ? null : String(v).trim());
 
@@ -36,12 +38,26 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // '' = not chosen, a locality id, or OTHER to type a name that isn't in the list.
+  const [localityChoice, setLocalityChoice] = useState('');
+  const [localityName, setLocalityName] = useState('');
+  const initialLocalityName = initial?.locality?.name;
 
   useEffect(() => {
     Promise.all([api.get<{ data: Locality[] }>('/localities'), api.get<{ data: Amenity[] }>('/amenities')])
-      .then(([l, a]) => { setLocalities(l.data); setAmenities(a.data); })
+      .then(([l, a]) => {
+        setLocalities(l.data);
+        setAmenities(a.data);
+        // A typed-in locality stays inactive (not in the list) until an admin activates it.
+        if (initial?.locality_id && l.data.some((x) => x.id === initial.locality_id)) {
+          setLocalityChoice(String(initial.locality_id));
+        } else if (initialLocalityName) {
+          setLocalityChoice(OTHER);
+          setLocalityName(initialLocalityName);
+        }
+      })
       .catch((e) => setLoadError(errorMessage(e)));
-  }, []);
+  }, [initial?.locality_id, initialLocalityName]);
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,7 +67,8 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
       description: String(fd.get('description') ?? '').trim(),
       listing_purpose: purpose,
       property_type: type,
-      locality_id: numberOrNull(fd.get('locality_id')),
+      locality_id: localityChoice && localityChoice !== OTHER ? Number(localityChoice) : null,
+      locality_name: localityChoice === OTHER ? localityName.trim() || null : null,
       public_address: String(fd.get('public_address') ?? '').trim(),
       private_address: textOrNull(fd.get('private_address')),
       pincode: textOrNull(fd.get('pincode')),
@@ -127,12 +144,23 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
 
       <Section title="Location">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Locality *" htmlFor="locality_id" error={errors.locality_id}>
-            <select id="locality_id" name="locality_id" className={selectClass} defaultValue={initial?.locality_id ?? ''} key={localities.length}>
+          <Field label="Locality *" htmlFor="locality_id" error={localityChoice === OTHER ? undefined : errors.locality_id}>
+            <select id="locality_id" className={selectClass} value={localityChoice} onChange={(e) => setLocalityChoice(e.target.value)}>
               <option value="">Select locality</option>
               {localities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              <option value={OTHER}>Other (type the area name)</option>
             </select>
           </Field>
+          {localityChoice === OTHER && (
+            <Field
+              label="Area name *"
+              htmlFor="locality_name"
+              error={errors.locality_name ?? errors.locality_id}
+              hint="e.g. Shilaj. Jalaram reviews new areas before they appear in search filters."
+            >
+              <Input id="locality_name" value={localityName} onChange={(e) => setLocalityName(e.target.value)} maxLength={80} autoFocus={!initial} />
+            </Field>
+          )}
           <Field label="Pincode" htmlFor="pincode" error={errors.pincode}>
             <Input id="pincode" name="pincode" defaultValue={initial?.pincode ?? ''} inputMode="numeric" maxLength={6} />
           </Field>

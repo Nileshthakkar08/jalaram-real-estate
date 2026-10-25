@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Locality;
 use App\Models\Property;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,7 @@ class OwnerPropertyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['title', 'description', 'public_address', 'private_address'] as $field) {
+        foreach (['title', 'description', 'public_address', 'private_address', 'locality_name'] as $field) {
             if (is_string($this->{$field})) {
                 $this->merge([$field => trim(strip_tags($this->{$field}))]);
             }
@@ -32,7 +33,9 @@ class OwnerPropertyRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'listing_purpose' => ['required', Rule::in(Property::PURPOSES)],
             'property_type' => ['required', Rule::in(Property::TYPES)],
-            'locality_id' => ['required', 'integer', Rule::exists('localities', 'id')->where('is_active', true)],
+            // Either pick a locality from the list, or type one in ("Other").
+            'locality_id' => ['nullable', 'required_without:locality_name', 'integer', Rule::exists('localities', 'id')->where('is_active', true)],
+            'locality_name' => ['nullable', 'required_without:locality_id', 'string', 'min:2', 'max:80', 'regex:/^[\pL\pN .,\'()&-]+$/u'],
             'public_address' => ['required', 'string', 'max:200'],
             'private_address' => ['nullable', 'string', 'max:300'],
             'pincode' => ['nullable', 'digits:6'],
@@ -58,9 +61,22 @@ class OwnerPropertyRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'locality_id.required_without' => 'Choose a locality, or select "Other" and type the area name.',
+            'locality_name.required_without' => 'Type the area name.',
+            'locality_name.regex' => 'Use letters, numbers, spaces and basic punctuation only.',
+        ];
+    }
+
+    /** Callers run this inside a DB transaction: a typed-in locality may be created here. */
     public function propertyData(): array
     {
         $data = $this->safe()->only(Property::OWNER_EDITABLE);
+        if (empty($data['locality_id']) && filled($this->input('locality_name'))) {
+            $data['locality_id'] = Locality::findOrCreateByName($this->input('locality_name'))->id;
+        }
         $data['description'] ??= '';
         $data['price_negotiable'] = $this->boolean('price_negotiable');
         if (($data['listing_purpose'] ?? null) === 'sale') {

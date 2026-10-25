@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/shared/password-input';
 import { Field } from '@/components/shared/form-field';
 import { useAuth, homeFor } from '@/lib/auth-context';
 import { ApiError, errorMessage } from '@/lib/api';
@@ -45,7 +46,7 @@ export function LoginForm() {
         <Input id="email" name="email" type="email" required autoComplete="email" />
       </Field>
       <Field label="Password" htmlFor="password">
-        <Input id="password" name="password" type="password" required autoComplete="current-password" />
+        <PasswordInput id="password" name="password" required autoComplete="current-password" />
       </Field>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

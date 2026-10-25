@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CheckCircle2, Loader2, MailWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/shared/password-input';
 import { Field } from '@/components/shared/form-field';
 import { Section } from '@/components/shared/section';
 import { api, ApiError, errorMessage } from '@/lib/api';
@@ -106,13 +107,13 @@ export function ProfileSettings() {
       <Section title="Change password">
         <form onSubmit={savePassword} className="space-y-4">
           <Field label="Current password" htmlFor="current_password" error={password.errors.current_password}>
-            <Input id="current_password" name="current_password" type="password" autoComplete="current-password" required />
+            <PasswordInput id="current_password" name="current_password" autoComplete="current-password" required />
           </Field>
           <Field label="New password" htmlFor="new_password" error={password.errors.password} hint="At least 8 characters, with letters and numbers.">
-            <Input id="new_password" name="password" type="password" autoComplete="new-password" required />
+            <PasswordInput id="new_password" name="password" autoComplete="new-password" required />
           </Field>
           <Field label="Confirm new password" htmlFor="password_confirmation">
-            <Input id="password_confirmation" name="password_confirmation" type="password" autoComplete="new-password" required />
+            <PasswordInput id="password_confirmation" name="password_confirmation" autoComplete="new-password" required />
           </Field>
           <div className="flex justify-end">
             <Button type="submit" disabled={savingPassword} className="gap-2">

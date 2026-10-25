@@ -119,7 +119,11 @@ export default async function PropertyDetailPage({ params }: PageProps) {
           {property.locality && (
             <>
               <ChevronRight className="h-3.5 w-3.5" />
-              <Link href={`/areas/${property.locality.slug}`} className="hover:text-primary">{property.locality.name}</Link>
+              {property.locality.has_page === false ? (
+                <span>{property.locality.name}</span>
+              ) : (
+                <Link href={`/areas/${property.locality.slug}`} className="hover:text-primary">{property.locality.name}</Link>
+              )}
             </>
           )}
           <ChevronRight className="h-3.5 w-3.5" />

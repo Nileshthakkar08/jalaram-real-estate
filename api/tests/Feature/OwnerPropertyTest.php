@@ -145,4 +145,43 @@ class OwnerPropertyTest extends TestCase
         $this->as($owner)->postJson("{$base}/close")->assertOk()->assertJsonPath('data.status', 'closed');
         $this->as($owner)->putJson($base, $this->payload())->assertStatus(409);
     }
+
+    public function test_owner_can_type_a_locality_that_is_created_inactive_and_reused(): void
+    {
+        $owner = $this->owner();
+        $payload = $this->payload();
+        unset($payload['locality_id']);
+
+        $this->as($owner)->postJson('/api/v1/owner/properties', $payload)
+            ->assertStatus(422)->assertJsonValidationErrors(['locality_id', 'locality_name']);
+
+        $id = $this->as($owner)->postJson('/api/v1/owner/properties', $payload + ['locality_name' => '  Shilaj  '])
+            ->assertCreated()->assertJsonPath('data.locality.name', 'Shilaj')->json('data.id');
+
+        $locality = Locality::where('name', 'Shilaj')->sole();
+        $this->assertFalse($locality->is_active);
+        $this->assertSame('shilaj', $locality->slug);
+        $this->assertSame($locality->id, Property::find($id)->locality_id);
+
+        // Same name in different case reuses it; it stays out of public locality lists.
+        $this->as($owner)->postJson('/api/v1/owner/properties', $payload + ['locality_name' => 'SHILAJ'])->assertCreated();
+        $this->assertSame(1, Locality::whereRaw('LOWER(name) = ?', ['shilaj'])->count());
+        $this->assertNull(collect($this->getJson('/api/v1/localities')->json('data'))->firstWhere('slug', 'shilaj'));
+
+        // Editing keeps working with the typed name, and junk input is rejected.
+        $this->as($owner)->putJson("/api/v1/owner/properties/{$id}", $payload + ['locality_name' => 'Shilaj'])->assertOk();
+        $this->as($owner)->postJson('/api/v1/owner/properties', $payload + ['locality_name' => '<script>x</script>'])->assertStatus(422);
+    }
+
+    public function test_existing_active_locality_is_reused_when_typed(): void
+    {
+        $owner = $this->owner();
+        $existing = Locality::factory()->create(['name' => 'Bodakdev', 'slug' => 'bodakdev']);
+        $payload = $this->payload();
+        unset($payload['locality_id']);
+
+        $this->as($owner)->postJson('/api/v1/owner/properties', $payload + ['locality_name' => 'bodakdev'])
+            ->assertCreated()->assertJsonPath('data.locality_id', $existing->id);
+        $this->assertSame(1, Locality::whereRaw('LOWER(name) = ?', ['bodakdev'])->count());
+    }
 }

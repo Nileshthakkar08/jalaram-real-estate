@@ -80,7 +80,7 @@ export interface PublicProperty {
   furnishing: FurnishingStatus | null;
   public_address: string;
   is_featured: boolean;
-  locality?: { name: string; slug: string };
+  locality?: { name: string; slug: string; has_page?: boolean };
   cover_image: PropertyImage | null;
   published_at: string | null;
   updated_at: string | null;

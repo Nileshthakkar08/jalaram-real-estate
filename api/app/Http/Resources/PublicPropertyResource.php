@@ -42,6 +42,8 @@ class PublicPropertyResource extends JsonResource
             'locality' => $this->whenLoaded('locality', fn () => [
                 'name' => $this->locality->name,
                 'slug' => $this->locality->slug,
+                // Typed-in localities stay inactive (no area page) until an admin activates them.
+                'has_page' => $this->locality->is_active,
             ]),
             'cover_image' => $this->relationLoaded('images') && $this->images->isNotEmpty()
                 ? new PropertyImageResource($this->images->first())

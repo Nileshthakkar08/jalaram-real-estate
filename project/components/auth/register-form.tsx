@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/shared/password-input';
 import { Field } from '@/components/shared/form-field';
 import { useAuth } from '@/lib/auth-context';
 import { ApiError, errorMessage } from '@/lib/api';
@@ -57,10 +58,10 @@ export function RegisterForm() {
         <Input id="phone" name="phone" type="tel" required autoComplete="tel" placeholder="+91 98XXX XXXXX" />
       </Field>
       <Field label="Password" htmlFor="password" error={errors.password} hint="At least 8 characters, with letters and numbers.">
-        <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
+        <PasswordInput id="password" name="password" required minLength={8} autoComplete="new-password" />
       </Field>
       <Field label="Confirm password" htmlFor="password_confirmation">
-        <Input id="password_confirmation" name="password_confirmation" type="password" required autoComplete="new-password" />
+        <PasswordInput id="password_confirmation" name="password_confirmation" required autoComplete="new-password" />
       </Field>
       <p className="text-xs text-muted-foreground">
         By creating an account you agree to our <a href="/terms" className="underline">terms</a> and{' '}

@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/shared/password-input';
 import { Field } from '@/components/shared/form-field';
 import { api, ApiError, errorMessage } from '@/lib/api';
 
@@ -97,10 +98,10 @@ export function ResetPasswordForm() {
     <form onSubmit={submit} className="space-y-4">
       {errors.email && <p className="text-sm text-destructive" role="alert">{errors.email}</p>}
       <Field label="New password" htmlFor="password" error={errors.password} hint="At least 8 characters, with letters and numbers.">
-        <Input id="password" name="password" type="password" required minLength={8} autoComplete="new-password" />
+        <PasswordInput id="password" name="password" required minLength={8} autoComplete="new-password" />
       </Field>
       <Field label="Confirm new password" htmlFor="password_confirmation">
-        <Input id="password_confirmation" name="password_confirmation" type="password" required autoComplete="new-password" />
+        <PasswordInput id="password_confirmation" name="password_confirmation" required autoComplete="new-password" />
       </Field>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       <Button type="submit" disabled={busy} className="w-full gap-2">
