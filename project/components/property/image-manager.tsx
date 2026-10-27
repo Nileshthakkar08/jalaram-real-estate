@@ -23,6 +23,7 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const remaining = MAX_IMAGES - images.length;
 
   const upload = async (files: FileList | null) => {
@@ -41,16 +42,31 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
       return;
     }
 
-    const fd = new FormData();
-    list.forEach((f) => fd.append('images[]', f));
+    // One photo per request: requests pass through Netlify's proxy, which rejects bodies over
+    // ~6 MB (413). Each photo is at most 5 MB, so uploading them one by one always fits.
     setBusy('upload');
+    const failed: string[] = [];
+    let resubmitted = false;
     try {
-      const res = await api.post<{ data: PropertyImage[]; meta?: { resubmitted_for_review?: boolean } }>(`${basePath}/images`, fd);
-      onChange(res.data, res.meta);
-    } catch (err) {
-      setError(errorMessage(err));
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        setProgress({ done: i, total: list.length });
+        const fd = new FormData();
+        fd.append('images[]', file);
+        try {
+          const res = await api.post<{ data: PropertyImage[]; meta?: { resubmitted_for_review?: boolean } }>(`${basePath}/images`, fd);
+          resubmitted ||= !!res.meta?.resubmitted_for_review;
+          onChange(res.data, { resubmitted_for_review: resubmitted });
+        } catch (err) {
+          failed.push(`${file.name}: ${errorMessage(err)}`);
+        }
+      }
+      if (failed.length) {
+        setError(`${list.length - failed.length} of ${list.length} uploaded. ${failed.join(' ')}`);
+      }
     } finally {
       setBusy(null);
+      setProgress(null);
       if (input.current) input.current.value = '';
     }
   };
@@ -97,7 +113,8 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
         </p>
         <input ref={input} type="file" accept={TYPES.join(',')} multiple className="hidden" onChange={(e) => upload(e.target.files)} aria-label="Choose photos" />
         <Button type="button" onClick={() => input.current?.click()} disabled={disabled || remaining <= 0 || !!busy} className="gap-2">
-          {busy === 'upload' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />} Add photos
+          {busy === 'upload' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+          {busy === 'upload' && progress ? `Uploading ${progress.done + 1} of ${progress.total}…` : 'Add photos'}
         </Button>
       </div>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
