@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: 'List Your Property',
   description: 'Create a free owner account and list your Ahmedabad property with Jalaram Real Estate.',
   alternates: { canonical: '/list-property' },
+  // Sign-in / sign-up gateway with little standalone content; /sell-property covers this topic.
+  robots: { index: false, follow: true },
 };
 
 export default function ListPropertyPage() {

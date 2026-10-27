@@ -74,4 +74,12 @@ class PublicSearchTest extends TestCase
         $row = collect($this->getJson('/api/v1/localities')->json('data'))->firstWhere('slug', 'thaltej');
         $this->assertSame(1, $row['listing_count']);
     }
+
+    public function test_api_responses_are_marked_noindex_and_api_root_redirects_to_website(): void
+    {
+        $this->getJson('/api/v1/localities')->assertOk()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->getJson('/api/v1/properties/does-not-exist')->assertNotFound()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+
+        $this->get('/')->assertStatus(301)->assertRedirect(config('app.frontend_url'));
+    }
 }

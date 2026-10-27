@@ -4,3 +4,10 @@ publish = ".next"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
+
+# The default Netlify hostname serves a duplicate copy of the site; send it to the real domain.
+[[redirects]]
+from = "https://enchanting-hummingbird-eb64eb.netlify.app/*"
+to = "https://jalaramrealestate.in/:splat"
+status = 301
+force = true

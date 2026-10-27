@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { PropertyCard } from '@/components/site/property-card';
 import { Pager } from '@/components/shared/pager';
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { api, errorMessage } from '@/lib/api';
 import type { Locality, Paginated, PublicProperty } from '@/lib/types';
 import { PROPERTY_TYPES, FURNISHING_TYPES, formatPriceShort } from '@/lib/format';
+import { listingApiQuery } from '@/lib/listing-query';
 
 interface ListingBrowserProps {
   listingType: 'sale' | 'rent';
@@ -21,17 +22,21 @@ interface ListingBrowserProps {
   /** Fix the locality (area landing pages). */
   fixedLocality?: string;
   localities?: Locality[];
+  /** Server-rendered first page, so listings are in the HTML crawlers receive. */
+  initial?: { query: string; result: Paginated<PublicProperty> | null };
+  /** Use h2 when the page already has its own h1 (area pages). */
+  titleAs?: 'h1' | 'h2';
 }
 
 const FILTER_KEYS = ['locality', 'type', 'bhk', 'min_price', 'max_price', 'furnishing', 'q'] as const;
 
-export function ListingBrowser({ listingType, title, subtitle, fixedLocality, localities: initialLocalities }: ListingBrowserProps) {
+export function ListingBrowser({ listingType, title, subtitle, fixedLocality, localities: initialLocalities, initial, titleAs = 'h1' }: ListingBrowserProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const [result, setResult] = useState<Paginated<PublicProperty> | null>(null);
+  const [result, setResult] = useState<Paginated<PublicProperty> | null>(initial?.result ?? null);
   const [localities, setLocalities] = useState<Locality[]>(initialLocalities ?? []);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initial?.result);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -43,7 +48,6 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
   const furnishing = searchParams.get('furnishing') ?? '';
   const q = searchParams.get('q') ?? '';
   const sort = searchParams.get('sort') ?? 'newest';
-  const page = Math.max(1, Number(searchParams.get('page') ?? 1) || 1);
 
   // Local state for free-text inputs so typing doesn't navigate on every keystroke.
   const [draft, setDraft] = useState({ min_price: minPrice, max_price: maxPrice, q });
@@ -54,19 +58,18 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
     api.get<{ data: Locality[] }>('/localities').then((r) => setLocalities(r.data)).catch(() => setLocalities([]));
   }, [initialLocalities]);
 
-  const query = useMemo(() => {
-    const params = new URLSearchParams({ purpose: listingType, sort, page: String(page), per_page: '12' });
-    if (locality) params.set('locality', locality);
-    if (propertyType) params.set('type', propertyType);
-    if (bhk) params.set('bhk', bhk);
-    if (minPrice) params.set('min_price', minPrice);
-    if (maxPrice) params.set('max_price', maxPrice);
-    if (furnishing) params.set('furnishing', furnishing);
-    if (q) params.set('q', q);
-    return params.toString();
-  }, [listingType, locality, propertyType, bhk, minPrice, maxPrice, furnishing, q, sort, page]);
+  const query = useMemo(
+    () => listingApiQuery(listingType, searchParams, fixedLocality),
+    [listingType, searchParams, fixedLocality]
+  );
+  // Skip the first browser fetch when the server already rendered this exact query.
+  const skipFetch = useRef(!!initial?.result && initial.query === query);
 
   useEffect(() => {
+    if (skipFetch.current) {
+      skipFetch.current = false;
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -222,7 +225,11 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
     <div className="container-mw container-px py-10 lg:py-14">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="font-serif text-3xl font-bold lg:text-4xl">{title}</h1>
+        {titleAs === 'h1' ? (
+          <h1 className="font-serif text-3xl font-bold lg:text-4xl">{title}</h1>
+        ) : (
+          <h2 className="font-serif text-3xl font-bold lg:text-4xl">{title}</h2>
+        )}
         <p className="mt-2 text-muted-foreground">{subtitle}</p>
       </div>
 

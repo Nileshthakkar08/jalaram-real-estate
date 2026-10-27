@@ -22,8 +22,8 @@ export default function AboutPage() {
   return (
     <PublicLayout>
       <ContentHero
-        eyebrow={`About ${BUSINESS.name}`}
-        title={BUSINESS.tagline}
+        eyebrow={BUSINESS.tagline}
+        title={`About ${BUSINESS.name}`}
         intro="We are a residential property brokerage in Ahmedabad. We help people buy, rent and sell homes by managing the whole process — from the first enquiry to the final agreement."
       />
       <section className="py-16 lg:py-20">

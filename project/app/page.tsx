@@ -10,9 +10,15 @@ import {
   CheckCircle2, FileText, HandshakeIcon, Headphones
 } from 'lucide-react';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import Image from 'next/image';
 
 export const revalidate = 60;
+
+// Set here rather than in the root layout, so other pages never inherit the homepage canonical.
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 async function getHomepageData() {
   const [featured, recent, localities, settings] = await Promise.all([

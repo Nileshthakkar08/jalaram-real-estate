@@ -34,7 +34,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Property Not Found', robots: { index: false } };
   }
   const property = result.data;
-  const description = `${property.listing_purpose === 'sale' ? 'For sale' : 'For rent'}: ${property.title} in ${property.locality?.name ?? 'Ahmedabad'}. ${(property.description ?? '').slice(0, 120)}`;
+  const where = property.locality?.name ?? 'Ahmedabad';
+  const place = property.title.toLowerCase().includes(where.toLowerCase()) ? '' : ` in ${where}`;
+  const description = `${property.listing_purpose === 'sale' ? 'For sale' : 'For rent'}: ${property.title}${place}. ${(property.description ?? '').replace(/\s+/g, ' ').slice(0, 120)}`;
   const image = property.images?.[0]?.url;
 
   return {
