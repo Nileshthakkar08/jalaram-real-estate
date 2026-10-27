@@ -27,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(5)->by('enq-min:'.$request->ip()),
             Limit::perDay(30)->by('enq-day:'.$request->ip()),
         ]);
+        RateLimiter::for('push', fn (Request $request) => Limit::perMinute(10)->by('push:'.$request->ip()));
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(10)->by('auth:'.$request->ip()));
         RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(20)->by('upl:'.($request->user()?->id ?? $request->ip())));
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(240)->by($request->user()?->id ?? $request->ip()));

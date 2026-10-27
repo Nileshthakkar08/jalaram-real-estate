@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/site/navbar';
 import { Footer } from '@/components/site/footer';
 import { FloatingActions } from '@/components/site/floating-actions';
+import { PushPrompt } from '@/components/site/push-prompt';
 import { SettingsProvider } from '@/lib/settings-context';
 import { serverApi } from '@/lib/server-api';
 
@@ -13,6 +14,7 @@ export async function PublicLayout({ children }: { children: React.ReactNode }) 
       <main id="main" className="min-h-screen">{children}</main>
       <Footer settings={settings} />
       <FloatingActions />
+      <PushPrompt />
     </SettingsProvider>
   );
 }

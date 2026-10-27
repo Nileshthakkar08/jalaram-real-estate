@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Deal;
 use App\Models\Lead;
 use App\Models\Property;
+use App\Models\PushSubscription;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -46,6 +47,7 @@ class AdminController extends Controller
                 'outstanding' => $allTime['totals']['outstanding'],
             ],
             'pending_review' => Property::query()->where('status', 'pending')->count(),
+            'push_subscribers' => PushSubscription::count(),
         ]]);
     }
 

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <PublicLayout>
-      <ContentHero eyebrow="Legal" title="Privacy Policy" intro="Last updated: 23 October 2026" />
+      <ContentHero eyebrow="Legal" title="Privacy Policy" intro="Last updated: 27 October 2026" />
       <section className="py-12 lg:py-16">
         <div className="container-mw container-px max-w-3xl">
           <Prose>
@@ -29,6 +29,15 @@ export default function PrivacyPolicyPage() {
               <li><strong>Transactions:</strong> if a deal proceeds, agreed terms, brokerage agreements, payment references and related documents.</li>
               <li><strong>Technical data:</strong> IP address (used to prevent spam and abuse) and essential cookies that keep you signed in and protect forms against forgery. We do not use advertising cookies.</li>
             </ul>
+
+            <h2>Browser notifications</h2>
+            <p>
+              If you choose <strong>Allow</strong> when we offer alerts for new properties, your browser gives us an anonymous
+              push subscription (a technical address issued by your browser&apos;s push service, such as Google, Mozilla, Apple or
+              Microsoft). We store only that address and the keys needed to send to it — not your name, email, phone number or IP
+              address. We use it solely to tell you when a new property is listed. You can stop notifications at any time in your
+              browser&apos;s site settings; subscriptions that stop working are deleted automatically.
+            </p>
 
             <h2>How we use it</h2>
             <ul>

@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+
+    // Browser push notifications for new listings. Generate keys with: php artisan push:vapid
+    'webpush' => [
+        'public_key' => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject' => env('VAPID_SUBJECT', 'mailto:no-reply@localhost'),
+    ],
+
 ];

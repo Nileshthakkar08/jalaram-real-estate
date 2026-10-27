@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Owner\PropertyImageController;
 use App\Http\Controllers\Api\Public\CatalogController;
 use App\Http\Controllers\Api\Public\EnquiryController;
 use App\Http\Controllers\Api\Public\PropertySearchController;
+use App\Http\Controllers\Api\Public\PushSubscriptionController;
 use App\Http\Controllers\Api\Team\BrokerageController;
 use App\Http\Controllers\Api\Team\CustomerController;
 use App\Http\Controllers\Api\Team\DealController;
@@ -31,6 +32,12 @@ Route::prefix('v1')->group(function () {
     Route::get('sitemap', [CatalogController::class, 'sitemap']);
     Route::get('properties', [PropertySearchController::class, 'index']);
     Route::get('properties/{slug}', [PropertySearchController::class, 'show']);
+
+    Route::get('push/public-key', [PushSubscriptionController::class, 'publicKey']);
+    Route::middleware('throttle:push')->group(function () {
+        Route::post('push/subscriptions', [PushSubscriptionController::class, 'store']);
+        Route::delete('push/subscriptions', [PushSubscriptionController::class, 'destroy']);
+    });
 
     Route::middleware('throttle:enquiries')->group(function () {
         Route::post('enquiries', [EnquiryController::class, 'store']);

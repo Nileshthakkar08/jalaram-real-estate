@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AlarmClock, Building2, CheckCircle2, Clock, Handshake, IndianRupee, Inbox, UserX, Users, Wallet } from 'lucide-react';
+import { AlarmClock, Bell, Building2, CheckCircle2, Clock, Handshake, IndianRupee, Inbox, UserX, Users, Wallet } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from '@/components/shared/stat-card';
 import { Section } from '@/components/shared/section';
@@ -16,6 +16,7 @@ interface AdminDashboard {
   deals: { open: number; closed_won_this_month: number };
   brokerage: { potential: string; agreed_this_month: string; collected_this_month: string; outstanding: string };
   pending_review: number;
+  push_subscribers?: number;
 }
 
 export default function AdminDashboardPage() {
@@ -38,6 +39,7 @@ export default function AdminDashboardPage() {
               <StatCard label="Outstanding brokerage" value={formatMoney(d.brokerage.outstanding)} icon={AlarmClock} tone="warning" href="/admin/deals?payment=outstanding" />
               <StatCard label="Agreed this month" value={formatMoney(d.brokerage.agreed_this_month)} icon={IndianRupee} />
               <StatCard label="Pipeline estimate" value={formatMoney(d.brokerage.potential)} icon={IndianRupee} hint="Open deals — not revenue" />
+              <StatCard label="Notification subscribers" value={d.push_subscribers ?? 0} icon={Bell} hint="Get a browser alert for each new listing" />
             </div>
             <div className="grid gap-6 lg:grid-cols-2">
               <Section title={<span className="flex items-center gap-2"><Building2 className="h-5 w-5 text-accent" /> Listings by status</span>}>

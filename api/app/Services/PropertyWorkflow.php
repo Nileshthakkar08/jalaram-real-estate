@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\InvalidTransitionException;
+use App\Jobs\NotifySubscribersOfNewListing;
 use App\Models\Property;
 use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
@@ -162,14 +163,22 @@ class PropertyWorkflow
     private function publish(Property $property, string $action, ?string $note): Property
     {
         $days = (int) Setting::get('listing_validity_days', '90');
+        $firstPublication = $property->published_at === null;
 
-        return $this->transition($property, 'published', $action, [
+        $property = $this->transition($property, 'published', $action, [
             'published_at' => $property->published_at ?? now(),
             'expires_at' => $days > 0 ? now()->addDays($days) : null,
             'reviewed_at' => now(),
             'reviewed_by' => auth()->id(),
             'rejection_reason' => null,
         ], $note);
+
+        // Tell opted-in visitors about genuinely new listings only (not re-approvals after edits).
+        if ($firstPublication) {
+            NotifySubscribersOfNewListing::dispatch($property->id)->afterCommit();
+        }
+
+        return $property;
     }
 
     private function transition(Property $property, string $to, string $action, array $extra = [], ?string $reason = null): Property
