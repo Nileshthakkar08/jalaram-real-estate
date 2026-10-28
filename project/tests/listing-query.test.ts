@@ -10,7 +10,7 @@ describe('listingApiQuery', () => {
   });
 
   it('pins the locality on area pages and ignores invalid page numbers', () => {
-    const q = listingApiQuery('sale', new URLSearchParams('locality=gota&page=abc'), 'shilaj');
+    const q = listingApiQuery('sale', new URLSearchParams('locality=gota&page=abc'), { locality: 'shilaj' });
     expect(q).toBe('purpose=sale&sort=newest&page=1&per_page=12&locality=shilaj');
   });
 

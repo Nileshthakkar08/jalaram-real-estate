@@ -3,6 +3,7 @@ import { PropertyCard } from '@/components/site/property-card';
 import { PropertyGallery } from '@/components/site/property-gallery';
 import { PropertyContactPanel } from '@/components/site/property-contact-panel';
 import { serverApi, ServerApiError } from '@/lib/server-api';
+import { listingHeading, listingPath } from '@/lib/listing-path';
 import { formatPrice, formatDate, propertyTypeLabel, humanize } from '@/lib/format';
 import {
   MapPin, Maximize, BedDouble, Bath, CheckCircle2, Sofa, Car, Zap, ShieldCheck,
@@ -52,6 +53,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+/** Money arrives as strings like "0.00", which are truthy — only show amounts above zero. */
+function hasAmount(value: string | null | undefined): boolean {
+  return Number(value ?? 0) > 0;
+}
+
 function structuredData(property: PublicProperty) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   return {
@@ -83,6 +89,24 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const { data: property, similar } = result;
 
   const images = property.images ?? [];
+  const bedrooms = property.bedrooms ?? 0;
+  const searchFilters = {
+    locality: property.locality?.slug,
+    bhk: property.property_type !== 'plot' && bedrooms > 0 ? String(Math.min(bedrooms, 5)) : undefined,
+    type: property.property_type,
+  };
+  const relatedSearches = [
+    { locality: searchFilters.locality, bhk: searchFilters.bhk, type: searchFilters.type },
+    { locality: searchFilters.locality, bhk: searchFilters.bhk },
+    { locality: searchFilters.locality },
+    { bhk: searchFilters.bhk, type: searchFilters.type },
+  ]
+    .filter((f) => f.locality || f.bhk || f.type)
+    .map((f) => ({
+      href: listingPath(property.listing_purpose, f),
+      label: listingHeading(property.listing_purpose, f, f.locality ? property.locality?.name : undefined),
+    }))
+    .filter((r, i, all) => all.findIndex((x) => x.href === r.href) === i);
   const purposeHref = property.listing_purpose === 'sale' ? '/buy' : '/rent';
 
   const amenityIcons: Record<string, React.ElementType> = {
@@ -99,8 +123,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
     { label: 'Facing', value: property.facing ? humanize(property.facing) : null },
     { label: 'Property age', value: property.property_age_years !== null && property.property_age_years !== undefined ? `${property.property_age_years} years` : null },
     { label: 'Available from', value: property.available_from ? formatDate(property.available_from) : null },
-    { label: 'Security deposit', value: property.security_deposit ? formatPrice(property.security_deposit) : null },
-    { label: 'Maintenance', value: property.maintenance_charges ? `${formatPrice(property.maintenance_charges)}/mo` : null },
+    { label: 'Security deposit', value: hasAmount(property.security_deposit) ? formatPrice(property.security_deposit!) : null },
+    { label: 'Maintenance', value: hasAmount(property.maintenance_charges) ? `${formatPrice(property.maintenance_charges!)}/mo` : null },
   ].filter((s) => s.value !== null && s.value !== undefined && s.value !== '');
 
   return (
@@ -169,7 +193,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 {property.price_negotiable && <span className="ml-2 align-middle text-sm font-medium text-muted-foreground">Negotiable</span>}
               </p>
               {property.listing_purpose === 'rent' && (
-                <p className="mt-1 text-sm text-muted-foreground">Monthly rent{property.security_deposit ? ` · ${formatPrice(property.security_deposit)} security deposit` : ''}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Monthly rent{hasAmount(property.security_deposit) ? ` · ${formatPrice(property.security_deposit!)} security deposit` : ''}</p>
               )}
             </div>
 
@@ -282,6 +306,20 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </p>
           </div>
         </div>
+
+        {/* Related search pages — internal links to the clean search URLs */}
+        {relatedSearches.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-serif text-lg font-semibold">Explore similar searches</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {relatedSearches.map((r) => (
+                <Link key={r.href} href={r.href} className="rounded-full border border-border bg-card px-4 py-2 text-sm hover:border-accent hover:text-primary">
+                  {r.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Similar properties */}
         {similar.length > 0 && (

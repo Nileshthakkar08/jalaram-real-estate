@@ -14,6 +14,7 @@ import { api, errorMessage } from '@/lib/api';
 import type { Locality, Paginated, PublicProperty } from '@/lib/types';
 import { PROPERTY_TYPES, FURNISHING_TYPES, formatPriceShort } from '@/lib/format';
 import { listingApiQuery } from '@/lib/listing-query';
+import { listingPath, type PathFilters } from '@/lib/listing-path';
 
 interface ListingBrowserProps {
   listingType: 'sale' | 'rent';
@@ -26,11 +27,14 @@ interface ListingBrowserProps {
   initial?: { query: string; result: Paginated<PublicProperty> | null };
   /** Use h2 when the page already has its own h1 (area pages). */
   titleAs?: 'h1' | 'h2';
+  /** Area / BHK / type taken from a clean search URL (/3-bhk-flats-for-rent-in-shilaj-ahmedabad). */
+  pathFilters?: PathFilters;
 }
 
-const FILTER_KEYS = ['locality', 'type', 'bhk', 'min_price', 'max_price', 'furnishing', 'q'] as const;
+/** These filters live in the URL path; everything else stays a ?query parameter. */
+const PATH_KEYS = ['locality', 'bhk', 'type'];
 
-export function ListingBrowser({ listingType, title, subtitle, fixedLocality, localities: initialLocalities, initial, titleAs = 'h1' }: ListingBrowserProps) {
+export function ListingBrowser({ listingType, title, subtitle, fixedLocality, localities: initialLocalities, initial, titleAs = 'h1', pathFilters }: ListingBrowserProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -40,9 +44,9 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const locality = fixedLocality ?? searchParams.get('locality') ?? '';
-  const propertyType = searchParams.get('type') ?? '';
-  const bhk = searchParams.get('bhk') ?? '';
+  const locality = fixedLocality ?? pathFilters?.locality ?? searchParams.get('locality') ?? '';
+  const propertyType = pathFilters?.type ?? searchParams.get('type') ?? '';
+  const bhk = pathFilters?.bhk ?? searchParams.get('bhk') ?? '';
   const minPrice = searchParams.get('min_price') ?? '';
   const maxPrice = searchParams.get('max_price') ?? '';
   const furnishing = searchParams.get('furnishing') ?? '';
@@ -58,9 +62,12 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
     api.get<{ data: Locality[] }>('/localities').then((r) => setLocalities(r.data)).catch(() => setLocalities([]));
   }, [initialLocalities]);
 
+  const fixedLocalityValue = fixedLocality ?? pathFilters?.locality;
+  const fixedBhk = pathFilters?.bhk;
+  const fixedType = pathFilters?.type;
   const query = useMemo(
-    () => listingApiQuery(listingType, searchParams, fixedLocality),
-    [listingType, searchParams, fixedLocality]
+    () => listingApiQuery(listingType, searchParams, { locality: fixedLocalityValue, bhk: fixedBhk, type: fixedType }),
+    [listingType, searchParams, fixedLocalityValue, fixedBhk, fixedType]
   );
   // Skip the first browser fetch when the server already rendered this exact query.
   const skipFetch = useRef(!!initial?.result && initial.query === query);
@@ -82,20 +89,36 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
 
   const updateFilters = (changes: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
-    Object.entries(changes).forEach(([key, value]) => (value ? params.set(key, value) : params.delete(key)));
+    Object.entries(changes).forEach(([key, value]) => {
+      if (!PATH_KEYS.includes(key)) value ? params.set(key, value) : params.delete(key);
+    });
     if (!('page' in changes)) params.delete('page');
+
+    // Area / BHK / type changes go to the matching clean search URL.
+    let path = pathname;
+    if (PATH_KEYS.some((key) => key in changes)) {
+      const pick = (key: string, current: string) => ((key in changes ? changes[key] : current) || undefined);
+      path = listingPath(listingType, {
+        locality: fixedLocality ?? pick('locality', locality),
+        bhk: pick('bhk', bhk),
+        type: pick('type', propertyType),
+      });
+      ['locality', 'bhk', 'type', 'purpose'].forEach((key) => params.delete(key));
+    }
+
     const s = params.toString();
-    router.push(s ? `${pathname}?${s}` : pathname, { scroll: 'page' in changes });
+    router.push(s ? `${path}?${s}` : path, { scroll: 'page' in changes });
   };
   const updateFilter = (key: string, value: string) => updateFilters({ [key]: value });
 
   const applyDraft = () => updateFilters({ min_price: draft.min_price, max_price: draft.max_price, q: draft.q.trim() });
 
   const clearFilters = () => {
-    router.push(pathname);
+    // Area pages keep their area; search pages go back to /buy or /rent.
+    router.push(fixedLocality ? pathname : listingPath(listingType, {}));
   };
 
-  const hasFilters = FILTER_KEYS.some((k) => k !== 'locality' || !fixedLocality ? !!searchParams.get(k) : false);
+  const hasFilters = !!((!fixedLocality && locality) || propertyType || bhk || minPrice || maxPrice || furnishing || q);
   const count = result?.meta.total ?? 0;
 
   const FilterContent = () => (

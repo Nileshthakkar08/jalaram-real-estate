@@ -6,6 +6,7 @@ import { Search } from 'lucide-react';
 import type { Locality } from '@/lib/types';
 import { PROPERTY_TYPES, RENT_BUDGETS, SALE_BUDGETS } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { listingPath } from '@/lib/listing-path';
 
 const selectClass =
   'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-ring';
@@ -19,16 +20,16 @@ export function HeroSearch({ localities }: { localities: Locality[] }) {
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const value = (key: string) => String(fd.get(key) ?? '') || undefined;
+
+    // Area / BHK / type go into the clean search URL; the budget stays a query parameter.
+    const path = listingPath(purpose, { locality: value('locality'), bhk: value('bhk'), type: value('type') });
     const params = new URLSearchParams();
-    ['locality', 'type', 'bhk'].forEach((key) => {
-      const value = String(fd.get(key) ?? '');
-      if (value) params.set(key, value);
-    });
     const [min, max] = String(fd.get('budget') ?? '').split('-');
     if (min && min !== '0') params.set('min_price', min);
     if (max) params.set('max_price', max);
     const query = params.toString();
-    router.push(`/${purpose === 'rent' ? 'rent' : 'buy'}${query ? `?${query}` : ''}`);
+    router.push(query ? `${path}?${query}` : path);
   };
 
   return (

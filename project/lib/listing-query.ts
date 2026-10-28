@@ -7,7 +7,14 @@ export const LISTING_PAGE_SIZE = 12;
 
 type ParamSource = { get(key: string): string | null };
 
-export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, fixedLocality?: string): string {
+/** Filters that come from the URL path (clean search URLs, area pages) rather than ?query params. */
+export interface FixedFilters {
+  locality?: string;
+  bhk?: string;
+  type?: string;
+}
+
+export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, fixed: FixedFilters = {}): string {
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1);
   const query = new URLSearchParams({
     purpose,
@@ -15,11 +22,10 @@ export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, f
     page: String(page),
     per_page: String(LISTING_PAGE_SIZE),
   });
-  const locality = fixedLocality ?? params.get('locality');
   const filters: [string, string | null | undefined][] = [
-    ['locality', locality],
-    ['type', params.get('type')],
-    ['bhk', params.get('bhk')],
+    ['locality', fixed.locality ?? params.get('locality')],
+    ['type', fixed.type ?? params.get('type')],
+    ['bhk', fixed.bhk ?? params.get('bhk')],
     ['min_price', params.get('min_price')],
     ['max_price', params.get('max_price')],
     ['furnishing', params.get('furnishing')],

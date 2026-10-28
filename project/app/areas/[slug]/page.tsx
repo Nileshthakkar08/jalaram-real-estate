@@ -8,6 +8,7 @@ import { ListingBrowser } from '@/components/site/listing-browser';
 import { LoadingState } from '@/components/shared/states';
 import { serverApi, ServerApiError } from '@/lib/server-api';
 import { listingApiQuery, searchParamsSource } from '@/lib/listing-query';
+import { listingPath } from '@/lib/listing-path';
 import { cn } from '@/lib/utils';
 
 export const revalidate = 300;
@@ -59,7 +60,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const fallback = defaultPurpose(counts);
   const purpose = chosenPurpose(searchParams, fallback);
   const available = (['sale', 'rent'] as const).filter((p) => counts[p] > 0).map((p) => countLabel(counts[p], p));
-  const canonical = purpose === fallback ? `/areas/${locality.slug}` : `/areas/${locality.slug}?purpose=${purpose}`;
+  // The clean search URL (/properties-for-rent-in-shilaj-ahmedabad) is the indexed version of this view.
+  const canonical = listingPath(purpose, { locality: locality.slug });
 
   return {
     title: `Property in ${locality.name}, Ahmedabad`,
@@ -80,7 +82,7 @@ export default async function AreaPage({ params, searchParams }: PageProps) {
   const counts = await getCounts(locality.slug);
   const fallback = defaultPurpose(counts);
   const purpose = chosenPurpose(searchParams, fallback);
-  const query = listingApiQuery(purpose, searchParamsSource(searchParams), locality.slug);
+  const query = listingApiQuery(purpose, searchParamsSource(searchParams), { locality: locality.slug });
   const result = await serverApi.maybe(serverApi.properties(`?${query}`));
   const tabHref = (p: Purpose) => (p === fallback ? `/areas/${locality.slug}` : `/areas/${locality.slug}?purpose=${p}`);
   const available = (['sale', 'rent'] as const).filter((p) => counts[p] > 0).map((p) => countLabel(counts[p], p));
