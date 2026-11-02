@@ -14,21 +14,23 @@ export interface FixedFilters {
   type?: string;
 }
 
-export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, fixed: FixedFilters = {}): string {
+/** `all` lists sale and rent together (the /properties page). */
+export type ListingScope = 'sale' | 'rent' | 'all';
+
+export function listingApiQuery(purpose: ListingScope, params: ParamSource, fixed: FixedFilters = {}): string {
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1);
-  const query = new URLSearchParams({
-    purpose,
-    sort: params.get('sort') ?? 'newest',
-    page: String(page),
-    per_page: String(LISTING_PAGE_SIZE),
-  });
-    const filters: [string, string | null | undefined][] = [
-        ['locality', fixed.locality ?? params.get('locality')],
-        ['type', fixed.type ?? params.get('type')],
-        ['bhk', fixed.bhk ?? params.get('bhk')],
-        ['min_price', params.get('min_price')],
-        ['max_price', params.get('max_price')],
-        ['furnishing', params.get('furnishing')],
+  const query = new URLSearchParams();
+  if (purpose !== 'all') query.set('purpose', purpose);
+  query.set('sort', params.get('sort') ?? 'newest');
+  query.set('page', String(page));
+  query.set('per_page', String(LISTING_PAGE_SIZE));
+  const filters: [string, string | null | undefined][] = [
+    ['locality', fixed.locality ?? params.get('locality')],
+    ['type', fixed.type ?? params.get('type')],
+    ['bhk', fixed.bhk ?? params.get('bhk')],
+    ['min_price', params.get('min_price')],
+    ['max_price', params.get('max_price')],
+    ['furnishing', params.get('furnishing')],
     ['q', params.get('q')],
   ];
   filters.forEach(([key, value]) => {

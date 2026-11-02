@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
   // Only canonical, indexable pages. /list-property is a sign-in gateway (noindex), and the
   // homepage uses the trailing slash to match its canonical URL.
-  const staticPages = ['/', '/buy', '/rent', '/sell-property', '/about', '/contact', '/privacy-policy', '/terms'];
+  const staticPages = ['/', '/properties', '/buy', '/rent', '/sell-property', '/about', '/contact', '/privacy-policy', '/terms'];
   // Area pages (/areas/x) canonicalise to these clean search URLs, so only the latter are listed.
   const properties = await allPublicProperties();
 

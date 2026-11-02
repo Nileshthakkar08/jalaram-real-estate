@@ -18,4 +18,9 @@ describe('listingApiQuery', () => {
     expect(searchParamsSource({ type: ['villa', 'plot'] }).get('type')).toBe('villa');
     expect(searchParamsSource({}).get('type')).toBeNull();
   });
+
+  it('lists sale and rent together on the all-properties page', () => {
+    const q = listingApiQuery('all', new URLSearchParams('bhk=2&purpose=sale'));
+    expect(q).toBe('sort=newest&page=1&per_page=12&bhk=2');
+  });
 });

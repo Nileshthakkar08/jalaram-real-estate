@@ -13,11 +13,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { api, errorMessage } from '@/lib/api';
 import type { Locality, Paginated, PublicProperty } from '@/lib/types';
 import { PROPERTY_TYPES, FURNISHING_TYPES, formatPriceShort } from '@/lib/format';
-import { listingApiQuery } from '@/lib/listing-query';
+import { listingApiQuery, type ListingScope } from '@/lib/listing-query';
 import { listingPath, type PathFilters } from '@/lib/listing-path';
 
 interface ListingBrowserProps {
-  listingType: 'sale' | 'rent';
+  /** `all` = sale and rent together (/properties); filters then stay ?query parameters. */
+  listingType: ListingScope;
   title: string;
   subtitle: string;
   /** Fix the locality (area landing pages). */
@@ -90,15 +91,17 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
   const updateFilters = (changes: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(changes).forEach(([key, value]) => {
-      if (!PATH_KEYS.includes(key)) value ? params.set(key, value) : params.delete(key);
+      if (listingType === 'all' || !PATH_KEYS.includes(key)) value ? params.set(key, value) : params.delete(key);
     });
     if (!('page' in changes)) params.delete('page');
 
-    // Area / BHK / type changes go to the matching clean search URL.
+    // Area / BHK / type changes go to the matching clean search URL. On /properties, choosing
+    // Buy or Rent moves to that purpose's URL with the same filters.
     let path = pathname;
-    if (PATH_KEYS.some((key) => key in changes)) {
+    const purpose = listingType === 'all' ? (changes.purpose as 'sale' | 'rent' | undefined) : listingType;
+    if (purpose && (listingType === 'all' || PATH_KEYS.some((key) => key in changes))) {
       const pick = (key: string, current: string) => ((key in changes ? changes[key] : current) || undefined);
-      path = listingPath(listingType, {
+      path = listingPath(purpose, {
         locality: fixedLocality ?? pick('locality', locality),
         bhk: pick('bhk', bhk),
         type: pick('type', propertyType),
@@ -115,7 +118,7 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
 
   const clearFilters = () => {
     // Area pages keep their area; search pages go back to /buy or /rent.
-    router.push(fixedLocality ? pathname : listingPath(listingType, {}));
+    router.push(fixedLocality ? pathname : listingType === 'all' ? '/properties' : listingPath(listingType, {}));
   };
 
   const hasFilters = !!((!fixedLocality && locality) || propertyType || bhk || minPrice || maxPrice || furnishing || q);
@@ -133,6 +136,20 @@ export function ListingBrowser({ listingType, title, subtitle, fixedLocality, lo
         <Label htmlFor="filter-q">Keyword</Label>
         <Input id="filter-q" placeholder="Area, landmark or reference" value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} />
       </div>
+
+      {listingType === 'all' && (
+        <div className="space-y-1.5">
+          <Label>Buy or Rent</Label>
+          <Select value="all" onValueChange={(v) => v !== 'all' && updateFilter('purpose', v)}>
+            <SelectTrigger aria-label="Buy or rent"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Buy or rent</SelectItem>
+              <SelectItem value="sale">Buy</SelectItem>
+              <SelectItem value="rent">Rent</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {!fixedLocality && (
         <div className="space-y-1.5">

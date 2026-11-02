@@ -21,31 +21,28 @@ export const metadata: Metadata = {
 };
 
 async function getHomepageData() {
-  const [featured, recent, localities, settings] = await Promise.all([
+  const [featured, latest, localities, settings] = await Promise.all([
     serverApi.maybe(serverApi.properties('?featured=1&per_page=4')),
-    serverApi.maybe(serverApi.properties('?per_page=6')),
+    serverApi.maybe(serverApi.properties('?sort=newest&per_page=10')),
     serverApi.maybe(serverApi.localities()),
     serverApi.settings(),
   ]);
 
-  const recentList = recent?.data ?? [];
-  const featuredList = featured?.data.length ? featured.data : recentList.slice(0, 4);
-  const featuredIds = new Set(featuredList.map((p) => p.id));
-
   return {
-    featured: featuredList,
-    recent: recentList.filter((p) => !featuredIds.has(p.id)).slice(0, 3),
-    totalListings: recent?.meta.total ?? 0,
+    // Only listings the team marked as featured; the newest ones already show in "Latest Properties".
+    featured: featured?.data ?? [],
+    latest: latest?.data ?? [],
+    totalListings: latest?.meta.total ?? 0,
     allLocalities: localities ?? [],
     // Show the areas with the most listings first on the homepage.
     localities: [...(localities ?? [])].sort((a, b) => (b.listing_count ?? 0) - (a.listing_count ?? 0)).slice(0, 6),
     settings,
-    apiAvailable: recent !== null,
+    apiAvailable: latest !== null,
   };
 }
 
 export default async function HomePage() {
-  const { featured, recent, totalListings, localities, allLocalities, settings } = await getHomepageData();
+  const { featured, latest, totalListings, localities, allLocalities, settings } = await getHomepageData();
   const phoneHref = callLink(settings);
   const whatsappHref = whatsappLink(settings, 'Hello, I would like to discuss my property requirements.');
 
@@ -114,9 +111,40 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ===== LATEST PROPERTIES ===== */}
+      {latest.length > 0 && (
+        <section className="py-16 lg:py-20">
+          <div className="container-mw container-px">
+            <div className="mb-10 flex items-end justify-between gap-4">
+              <div>
+                <span className="text-sm font-medium uppercase tracking-wider text-accent">Fresh Listings</span>
+                <h2 className="mt-2 font-serif text-3xl font-bold lg:text-4xl">Latest Properties</h2>
+                <p className="mt-2 text-muted-foreground">The newest homes for sale and rent across Ahmedabad.</p>
+              </div>
+              <Link href="/properties" className="hidden shrink-0 items-center gap-1 text-sm font-medium text-primary hover:text-accent sm:flex">
+                View all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-5">
+              {latest.map((property) => (
+                <PropertyCard key={property.id} property={property} />
+              ))}
+            </div>
+            <div className="mt-10 text-center">
+              <Link
+                href="/properties"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                View all {totalListings > latest.length ? `${totalListings.toLocaleString('en-IN')} ` : ''}properties <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ===== FEATURED PROPERTIES ===== */}
       {featured.length > 0 && (
-        <section className="py-16 lg:py-20">
+        <section className="border-t border-border py-16 lg:py-20">
           <div className="container-mw container-px">
             <div className="mb-10 flex items-end justify-between">
               <div>
@@ -180,23 +208,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ===== RECENTLY ADDED ===== */}
-      {recent.length > 0 && (
-        <section className="py-16 lg:py-20">
-          <div className="container-mw container-px">
-            <div className="mb-10">
-              <span className="text-sm font-medium uppercase tracking-wider text-accent">Fresh Listings</span>
-              <h2 className="mt-2 font-serif text-3xl font-bold lg:text-4xl">Recently Added</h2>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {recent.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ===== OWNER ACQUISITION / LIST YOUR PROPERTY ===== */}
       <section className="bg-primary py-16 lg:py-24">
