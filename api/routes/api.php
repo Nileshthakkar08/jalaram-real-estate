@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Owner\OwnerPropertyController;
 use App\Http\Controllers\Api\Owner\PropertyImageController;
+use App\Http\Controllers\Api\Owner\PropertyVideoController;
 use App\Http\Controllers\Api\Public\CatalogController;
 use App\Http\Controllers\Api\Public\EnquiryController;
 use App\Http\Controllers\Api\Public\PropertySearchController;
@@ -78,6 +79,8 @@ Route::prefix('v1')->group(function () {
         Route::post('properties/{property}/images', [PropertyImageController::class, 'store'])->middleware('throttle:uploads');
         Route::put('properties/{property}/images/order', [PropertyImageController::class, 'reorder']);
         Route::delete('properties/{property}/images/{image}', [PropertyImageController::class, 'destroy']);
+        Route::post('properties/{property}/video/chunks', [PropertyVideoController::class, 'chunk'])->middleware('throttle:video-chunks');
+        Route::delete('properties/{property}/video', [PropertyVideoController::class, 'destroy']);
     });
 
     // ---------- Team workspace (team members + admins) ----------
@@ -140,6 +143,8 @@ Route::prefix('v1')->group(function () {
         Route::post('properties/{property}/images', [PropertyImageController::class, 'store'])->middleware('throttle:uploads');
         Route::put('properties/{property}/images/order', [PropertyImageController::class, 'reorder']);
         Route::delete('properties/{property}/images/{image}', [PropertyImageController::class, 'destroy']);
+        Route::post('properties/{property}/video/chunks', [PropertyVideoController::class, 'chunk'])->middleware('throttle:video-chunks');
+        Route::delete('properties/{property}/video', [PropertyVideoController::class, 'destroy']);
     });
 
     // ---------- Admin only ----------

@@ -11,6 +11,7 @@ import { ActionDialog } from '@/components/shared/action-dialog';
 import { selectClass } from '@/components/shared/form-field';
 import { PropertyForm } from '@/components/property/property-form';
 import { ImageManager } from '@/components/property/image-manager';
+import { VideoManager } from '@/components/property/video-manager';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -88,7 +89,7 @@ export default function AdminPropertyPage() {
               <TabsList>
                 <TabsTrigger value="review">Review</TabsTrigger>
                 <TabsTrigger value="edit">Edit details</TabsTrigger>
-                <TabsTrigger value="photos">Photos ({p.images?.length ?? 0})</TabsTrigger>
+                <TabsTrigger value="photos">Photos &amp; video ({p.images?.length ?? 0})</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
               <TabsContent value="review" className="mt-6">
@@ -128,6 +129,9 @@ export default function AdminPropertyPage() {
               <TabsContent value="photos" className="mt-6">
                 <Section title="Photos">
                   <ImageManager basePath={`/admin/properties/${id}`} images={p.images ?? []} onChange={(images) => setData({ ...d, data: { ...p, images } })} />
+                </Section>
+                <Section title="Video" className="mt-6">
+                  <VideoManager basePath={`/admin/properties/${id}`} video={p.video} onChange={(video) => setData({ ...d, data: { ...p, video } })} />
                 </Section>
               </TabsContent>
               <TabsContent value="history" className="mt-6">

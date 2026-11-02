@@ -54,6 +54,7 @@ class OwnerPropertyResource extends JsonResource
             'updated_at' => $this->updated_at?->toIso8601String(),
             'images' => PropertyImageResource::collection($this->whenLoaded('images')),
             'cover_image' => $this->relationLoaded('images') && $this->images->isNotEmpty() ? new PropertyImageResource($this->images->first()) : null,
+            'video' => $this->resource->videoData(),
             'amenity_ids' => $this->whenLoaded('amenities', fn () => $this->amenities->pluck('id')),
             'amenities' => $this->whenLoaded('amenities', fn () => $this->amenities->map->only(['id', 'name', 'slug'])),
 

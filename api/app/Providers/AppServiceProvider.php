@@ -30,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('push', fn (Request $request) => Limit::perMinute(10)->by('push:'.$request->ip()));
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(10)->by('auth:'.$request->ip()));
         RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(20)->by('upl:'.($request->user()?->id ?? $request->ip())));
+        // A 100 MB video is 25 pieces of 4 MB; allow a couple of retries on top.
+        RateLimiter::for('video-chunks', fn (Request $request) => Limit::perMinute(40)->by('vid:'.($request->user()?->id ?? $request->ip())));
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(240)->by($request->user()?->id ?? $request->ip()));
     }
 }

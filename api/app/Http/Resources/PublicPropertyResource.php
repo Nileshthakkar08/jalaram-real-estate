@@ -48,6 +48,7 @@ class PublicPropertyResource extends JsonResource
             'cover_image' => $this->relationLoaded('images') && $this->images->isNotEmpty()
                 ? new PropertyImageResource($this->images->first())
                 : null,
+            'has_video' => (bool) $this->video_path,
             'published_at' => $this->published_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
@@ -67,6 +68,7 @@ class PublicPropertyResource extends JsonResource
             'property_age_years' => $this->property_age_years,
             'available_from' => $this->available_from?->toDateString(),
             'images' => PropertyImageResource::collection($images),
+            'video' => $this->resource->videoData(),
             'amenities' => $this->whenLoaded('amenities', fn () => $this->amenities->map->only(['name', 'slug'])),
         ];
     }

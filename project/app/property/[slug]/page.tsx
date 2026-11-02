@@ -219,6 +219,22 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               <p className="mt-3 whitespace-pre-line leading-relaxed text-muted-foreground">{property.description}</p>
             </div>
 
+            {/* Video tour */}
+            {property.video && (
+              <div>
+                <h2 className="font-serif text-xl font-semibold">Video tour</h2>
+                {/* Served straight from the API server (not through Netlify); metadata only until played. */}
+                <video
+                  src={property.video.url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="mt-3 aspect-video w-full rounded-xl bg-black"
+                  aria-label={`Video tour of ${property.title}`}
+                />
+              </div>
+            )}
+
             {/* Specifications */}
             {specs.length > 0 && (
               <div>

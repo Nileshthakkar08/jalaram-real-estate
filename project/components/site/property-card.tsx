@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Maximize, BedDouble, Bath, Share2 } from 'lucide-react';
+import { MapPin, Maximize, BedDouble, Bath, Share2, Video } from 'lucide-react';
 import { listingPrice, propertyTypeLabel } from '@/lib/format';
 import type { PublicProperty } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +64,9 @@ export function PropertyCard({ property, className }: PropertyCardProps) {
           </Badge>
           {property.is_featured && (
             <Badge className="bg-accent text-accent-foreground shadow-sm">Featured</Badge>
+          )}
+          {property.has_video && (
+            <Badge className="gap-1 bg-card/90 text-foreground shadow-sm"><Video className="h-3 w-3" /> Video</Badge>
           )}
         </div>
         <div className="absolute right-3 top-3 flex gap-1.5">

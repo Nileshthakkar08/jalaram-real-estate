@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lead;
+use App\Models\Locality;
 use App\Models\Property;
 use App\Models\SiteVisit;
 use App\Notifications\NewLeadNotification;
@@ -36,7 +37,7 @@ class EnquiryTest extends TestCase
 
     public function test_requirement_form_stores_budget_bhk_and_area(): void
     {
-        $locality = \App\Models\Locality::factory()->create();
+        $locality = Locality::factory()->create();
         $base = ['interest' => 'buy', 'consent_contact' => true, 'source_page' => '/requirement', 'utm_source' => 'instagram'];
 
         // Open-ended bands: "Under ₹25 L" has no minimum, "Above ₹2 Cr" has no maximum.

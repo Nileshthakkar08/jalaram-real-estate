@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Property extends Model
@@ -104,6 +105,20 @@ class Property extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by')->withTrashed();
+    }
+
+    /** The walkthrough video as the API returns it, or null when there is none. */
+    public function videoData(): ?array
+    {
+        if (! $this->video_path) {
+            return null;
+        }
+
+        return [
+            'url' => Storage::disk($this->video_disk)->url($this->video_path),
+            'mime' => $this->video_mime,
+            'size_bytes' => (int) $this->video_size_bytes,
+        ];
     }
 
     public function images(): HasMany

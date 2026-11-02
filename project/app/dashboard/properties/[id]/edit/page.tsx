@@ -9,6 +9,7 @@ import { DataState, LoadingState } from '@/components/shared/states';
 import { Section } from '@/components/shared/section';
 import { PropertyForm } from '@/components/property/property-form';
 import { ImageManager } from '@/components/property/image-manager';
+import { VideoManager } from '@/components/property/video-manager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useApi } from '@/hooks/use-api';
@@ -69,7 +70,7 @@ function EditProperty() {
               <Tabs defaultValue={params.get('step') === 'photos' ? 'photos' : 'details'}>
                 <TabsList>
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="photos">Photos ({property.images?.length ?? 0})</TabsTrigger>
+                  <TabsTrigger value="photos">Photos &amp; video ({property.images?.length ?? 0})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="details" className="mt-6">
                   <PropertyForm
@@ -93,6 +94,17 @@ function EditProperty() {
                       onChange={(images, meta) => {
                         setData({ data: { ...property, images, status: meta?.resubmitted_for_review ? 'pending' : property.status } });
                         if (meta?.resubmitted_for_review) toast({ title: 'Sent back for review', description: 'Photo changes on a live listing are reviewed before going live.' });
+                      }}
+                    />
+                  </Section>
+                  <Section title="Video" className="mt-6">
+                    <VideoManager
+                      basePath={`/owner/properties/${id}`}
+                      video={property.video}
+                      onChange={(video, meta) => {
+                        setData({ data: { ...property, video, status: meta?.resubmitted_for_review ? 'pending' : property.status } });
+                        if (meta?.resubmitted_for_review) toast({ title: 'Sent back for review', description: 'Video changes on a live listing are reviewed before going live.' });
+                        else if (video) toast({ title: 'Video uploaded' });
                       }}
                     />
                   </Section>

@@ -64,6 +64,12 @@ export interface PropertyImage {
   alt: string | null;
 }
 
+export interface PropertyVideo {
+  url: string;
+  mime: string;
+  size_bytes: number;
+}
+
 /** Public listing as served to visitors. Contains no owner or private data. */
 export interface PublicProperty {
   id: number;
@@ -82,6 +88,7 @@ export interface PublicProperty {
   is_featured: boolean;
   locality?: { name: string; slug: string; has_page?: boolean };
   cover_image: PropertyImage | null;
+  has_video?: boolean;
   published_at: string | null;
   updated_at: string | null;
   // detail-only
@@ -95,6 +102,7 @@ export interface PublicProperty {
   property_age_years?: number | null;
   available_from?: string | null;
   images?: PropertyImage[];
+  video?: PropertyVideo | null;
   amenities?: { name: string; slug: string }[];
 }
 
@@ -141,6 +149,7 @@ export interface ManagedProperty {
   updated_at: string;
   images?: PropertyImage[];
   cover_image: PropertyImage | null;
+  video?: PropertyVideo | null;
   amenity_ids?: number[];
   amenities?: { id: number; name: string; slug: string }[];
   // staff-only
