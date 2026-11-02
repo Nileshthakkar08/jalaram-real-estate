@@ -10,7 +10,12 @@ import type { PublicProperty } from '@/lib/types';
 export function PropertyContactPanel({ property }: { property: PublicProperty }) {
   const settings = usePublicSettings();
   const phoneHref = callLink(settings);
-  const whatsappHref = whatsappLink(settings, `Hello, I'm interested in ${property.title} (Ref: ${property.reference_code}).`);
+  // The link lets the team open the exact listing from the chat without asking which one.
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '');
+  const whatsappHref = whatsappLink(
+    settings,
+    `Hi, please send me details of ${property.title} (Ref: ${property.reference_code}).${siteUrl ? `\n${siteUrl}/property/${property.slug}` : ''}`
+  );
   const interest = property.listing_purpose === 'sale' ? 'buy' : 'rent';
 
   return (
@@ -21,15 +26,15 @@ export function PropertyContactPanel({ property }: { property: PublicProperty })
       </p>
 
       {(phoneHref || whatsappHref) && (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {phoneHref && (
-            <a href={phoneHref} className="flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
-              <Phone className="h-4 w-4 text-accent" /> Call
+        <div className="mt-4 space-y-2">
+          {whatsappHref && (
+            <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700">
+              <MessageCircle className="h-4 w-4" /> Get details on WhatsApp
             </a>
           )}
-          {whatsappHref && (
-            <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-green-700">
-              <MessageCircle className="h-4 w-4" /> WhatsApp
+          {phoneHref && (
+            <a href={phoneHref} className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-muted">
+              <Phone className="h-4 w-4" /> Call
             </a>
           )}
         </div>

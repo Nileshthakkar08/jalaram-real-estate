@@ -34,6 +34,30 @@ class EnquiryTest extends TestCase
         Notification::assertNotSentTo($property->owner, NewLeadNotification::class);
     }
 
+    public function test_requirement_form_stores_budget_bhk_and_area(): void
+    {
+        $locality = \App\Models\Locality::factory()->create();
+        $base = ['interest' => 'buy', 'consent_contact' => true, 'source_page' => '/requirement', 'utm_source' => 'instagram'];
+
+        // Open-ended bands: "Under ₹25 L" has no minimum, "Above ₹2 Cr" has no maximum.
+        $this->postJson('/api/v1/enquiries', $base + [
+            'name' => 'Asha', 'phone' => '9876500001', 'preferred_bhk' => 2, 'preferred_locality_id' => $locality->id,
+            'budget_min' => null, 'budget_max' => 2500000, 'message' => 'Requirement: 2 BHK to buy.',
+        ])->assertCreated();
+        $this->postJson('/api/v1/enquiries', $base + [
+            'name' => 'Ravi', 'phone' => '9876500002', 'budget_min' => 20000000, 'budget_max' => null,
+        ])->assertCreated();
+
+        $lead = Lead::where('phone_normalized', '9876500001')->firstOrFail();
+        $this->assertSame(2, $lead->preferred_bhk);
+        $this->assertSame($locality->id, $lead->preferred_locality_id);
+        $this->assertNull($lead->budget_min);
+        $this->assertEquals(2500000, $lead->budget_max);
+        $this->assertSame('/requirement', $lead->source_page);
+        $this->assertSame('instagram', $lead->utm_source);
+        $this->assertEquals(20000000, Lead::where('phone_normalized', '9876500002')->value('budget_min'));
+    }
+
     public function test_validation_consent_honeypot_and_unavailable_property(): void
     {
         $this->postJson('/api/v1/enquiries', ['name' => 'X', 'phone' => '123', 'interest' => 'buy'])

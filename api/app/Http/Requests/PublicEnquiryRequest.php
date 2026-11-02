@@ -35,7 +35,7 @@ class PublicEnquiryRequest extends FormRequest
             'interest' => ['required', Rule::in(Lead::INTERESTS)],
             'property_id' => ['nullable', 'integer'],
             'budget_min' => ['nullable', 'numeric', 'min:0', 'max:999999999999'],
-            'budget_max' => ['nullable', 'numeric', 'min:0', 'max:999999999999', 'gte:budget_min'],
+            'budget_max' => ['nullable', 'numeric', 'min:0', 'max:999999999999', ...($this->filled('budget_min') ? ['gte:budget_min'] : [])],
             'preferred_locality_id' => ['nullable', 'integer', 'exists:localities,id'],
             'preferred_bhk' => ['nullable', 'integer', 'between:1,10'],
             'source_page' => ['nullable', 'string', 'max:255'],

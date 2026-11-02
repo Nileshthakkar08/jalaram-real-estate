@@ -22,13 +22,13 @@ export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, f
     page: String(page),
     per_page: String(LISTING_PAGE_SIZE),
   });
-  const filters: [string, string | null | undefined][] = [
-    ['locality', fixed.locality ?? params.get('locality')],
-    ['type', fixed.type ?? params.get('type')],
-    ['bhk', fixed.bhk ?? params.get('bhk')],
-    ['min_price', params.get('min_price')],
-    ['max_price', params.get('max_price')],
-    ['furnishing', params.get('furnishing')],
+    const filters: [string, string | null | undefined][] = [
+        ['locality', fixed.locality ?? params.get('locality')],
+        ['type', fixed.type ?? params.get('type')],
+        ['bhk', fixed.bhk ?? params.get('bhk')],
+        ['min_price', params.get('min_price')],
+        ['max_price', params.get('max_price')],
+        ['furnishing', params.get('furnishing')],
     ['q', params.get('q')],
   ];
   filters.forEach(([key, value]) => {
