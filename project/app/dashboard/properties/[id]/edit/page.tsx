@@ -27,8 +27,10 @@ function EditProperty() {
 
   const submit = async () => {
     try {
-      await api.post(`/owner/properties/${id}/submit`);
-      toast({ title: 'Submitted for review', description: 'We will notify you once our team has reviewed your listing.' });
+      const res = await api.post<{ data: ManagedProperty }>(`/owner/properties/${id}/submit`);
+      // Complete listings can be approved automatically on submit.
+      if (res.data.status === 'published') toast({ title: 'Your listing is live', description: 'It passed our automatic checks and is now on the website.' });
+      else toast({ title: 'Submitted for review', description: 'We will notify you once our team has reviewed your listing.' });
       router.push(`/dashboard/properties/${id}`);
     } catch (err) {
       toast({ title: 'Cannot submit yet', description: errorMessage(err), variant: 'destructive' });

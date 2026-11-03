@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
  *
  * Owner:     draft|rejected → pending (submit); published ↔ unavailable; → closed (withdraw);
  *            editing a live listing sends it back to pending for re-review.
+ * System:    pending → published when ListingAutoReviewer flags nothing and the admin setting allows it.
  * Moderator: pending → published|rejected; published → suspended|unavailable|closed|expired;
  *            suspended|unavailable|expired|closed → published; any live state → closed.
  */
@@ -31,16 +32,26 @@ class PropertyWorkflow
     /** Edits to these states put the listing back into the review queue. */
     private const REREVIEW_ON_EDIT = ['published', 'unavailable', 'expired'];
 
-    public function __construct(private AuditLogger $audit) {}
+    public function __construct(private AuditLogger $audit, private ListingAutoReviewer $reviewer) {}
 
     public function ownerCanEdit(Property $property): bool
     {
         return ! in_array($property->status, ['closed', 'suspended'], true);
     }
 
-    /** Called after an owner saves changes. Returns true when the listing was sent back for review. */
+    /**
+     * Called after an owner saves changes. Returns true when the listing is left waiting for a
+     * person to review it (false if it stayed as it was or was approved automatically).
+     */
     public function afterOwnerEdit(Property $property): bool
     {
+        if ($property->status === 'pending') {
+            // Already in the queue (nothing new to tell the owner): re-check, since the edit may
+            // have fixed a flag, e.g. a third photo added.
+            $this->autoReview($property);
+
+            return false;
+        }
         if (! in_array($property->status, self::REREVIEW_ON_EDIT, true)) {
             return false;
         }
@@ -49,7 +60,20 @@ class PropertyWorkflow
         $property->forceFill(['status' => 'pending', 'submitted_at' => now()])->save();
         $this->audit->log('property.resubmitted_after_edit', $property, ['status' => $old], ['status' => 'pending']);
 
-        return true;
+        return $this->autoReview($property)->status === 'pending';
+    }
+
+    /** Records what needs a person's attention, and publishes the listing when nothing does. */
+    private function autoReview(Property $property): Property
+    {
+        $flags = $this->reviewer->flags($property);
+        $property->forceFill(['review_flags' => $flags ?: null])->save();
+
+        if ($flags || ListingAutoReviewer::mode() === 'off') {
+            return $property;
+        }
+
+        return $this->publish($property, 'property.auto_approved', 'Approved automatically: every check passed.', automatic: true);
     }
 
     public function submit(Property $property): Property
@@ -69,10 +93,12 @@ class PropertyWorkflow
             throw ValidationException::withMessages($missing);
         }
 
-        return $this->transition($property, 'pending', 'property.submitted', [
+        $property = $this->transition($property, 'pending', 'property.submitted', [
             'submitted_at' => now(),
             'rejection_reason' => null,
         ]);
+
+        return $this->autoReview($property);
     }
 
     public function setAvailability(Property $property, bool $available): Property
@@ -160,7 +186,8 @@ class PropertyWorkflow
         return $count;
     }
 
-    private function publish(Property $property, string $action, ?string $note): Property
+    /** `automatic`: approved by ListingAutoReviewer, so `reviewed_by` keeps the last person who reviewed it. */
+    private function publish(Property $property, string $action, ?string $note, bool $automatic = false): Property
     {
         $days = (int) Setting::get('listing_validity_days', '90');
         $firstPublication = $property->published_at === null;
@@ -169,8 +196,9 @@ class PropertyWorkflow
             'published_at' => $property->published_at ?? now(),
             'expires_at' => $days > 0 ? now()->addDays($days) : null,
             'reviewed_at' => now(),
-            'reviewed_by' => auth()->id(),
+            'reviewed_by' => $automatic ? $property->reviewed_by : auth()->id(),
             'rejection_reason' => null,
+            'review_flags' => null,
         ], $note);
 
         // Tell opted-in visitors about genuinely new listings only (not re-approvals after edits).

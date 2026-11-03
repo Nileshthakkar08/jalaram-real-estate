@@ -45,7 +45,9 @@ function Properties({ basePath, detailBase, endpoint }: { basePath: string; deta
                   key={p.id}
                   property={p}
                   href={`${detailBase}/${p.id}`}
-                  extra={`Owner: ${p.owner?.name ?? '—'} · ${p.leads_count ?? 0} leads · ${p.deals_count ?? 0} deals`}
+                  extra={`Owner: ${p.owner?.name ?? '—'} · ${p.leads_count ?? 0} leads · ${p.deals_count ?? 0} deals${
+                    p.status === 'pending' && p.review_flags?.length ? ` · ${p.review_flags.length} check${p.review_flags.length === 1 ? '' : 's'} to review` : ''
+                  }`}
                 />
               ))}
             </ul>

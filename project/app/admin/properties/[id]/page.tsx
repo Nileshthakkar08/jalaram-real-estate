@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useApi } from '@/hooks/use-api';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { formatDate, formatDateTime, formatPrice, listingStatusLabels } from '@/lib/format';
+import { formatArea, formatDate, formatDateTime, formatPrice, listingStatusLabels, propertyTypeLabel } from '@/lib/format';
 import type { AuditLog, ManagedProperty } from '@/lib/types';
 
 const MODERATOR_TRANSITIONS: Record<string, string[]> = {
@@ -85,6 +85,14 @@ export default function AdminPropertyPage() {
             />
             {p.rejection_reason && <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-900"><strong>Rejection reason:</strong> {p.rejection_reason}</p>}
 
+            {p.status === 'pending' && (p.review_flags?.length ?? 0) > 0 && (
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                <p className="font-semibold">Why this listing needs a person to review it</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                  {p.review_flags!.map((flag) => <li key={flag}>{flag}</li>)}
+                </ul>
+              </div>
+            )}
             <Tabs defaultValue="review">
               <TabsList>
                 <TabsTrigger value="review">Review</TabsTrigger>
@@ -97,11 +105,11 @@ export default function AdminPropertyPage() {
                   <Section title="Listing">
                     <p className="whitespace-pre-line text-sm text-muted-foreground">{p.description}</p>
                     <dl className="mt-4">
-                      <DetailRow label="Purpose / type">{p.listing_purpose} · {p.property_type}</DetailRow>
+                      <DetailRow label="Purpose / type">{p.listing_purpose} · {propertyTypeLabel(p.property_type, p.land_type)}</DetailRow>
                       <DetailRow label="Price">{formatPrice(p.price, p.listing_purpose)}</DetailRow>
                       <DetailRow label="Locality">{p.locality?.name}</DetailRow>
                       <DetailRow label="Public location">{p.public_address}</DetailRow>
-                      <DetailRow label="Area / BHK">{p.area_sqft} sq ft · {p.bedrooms ?? '—'}</DetailRow>
+                      <DetailRow label="Area / BHK">{formatArea(p.area_sqft, p.area_unit)}{p.property_type !== 'plot' && ` · ${p.bedrooms ?? '—'} BHK`}</DetailRow>
                       <DetailRow label="Amenities">{p.amenities?.map((a) => a.name).join(', ') || '—'}</DetailRow>
                     </dl>
                   </Section>

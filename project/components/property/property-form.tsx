@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Field, selectClass } from '@/components/shared/form-field';
 import { Section } from '@/components/shared/section';
 import { api, ApiError, errorMessage } from '@/lib/api';
-import { FACING_OPTIONS, FURNISHING_TYPES, PROPERTY_TYPES, formatPrice, humanize } from '@/lib/format';
+import { AREA_UNITS, FACING_OPTIONS, FURNISHING_TYPES, LAND_TYPES, PROPERTY_TYPES, areaInUnit, formatPrice, humanize } from '@/lib/format';
 import type { Amenity, Locality, ManagedProperty } from '@/lib/types';
 
 interface PropertyFormProps {
@@ -34,6 +34,12 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
   const [type, setType] = useState(initial?.property_type ?? 'apartment');
   const [price, setPrice] = useState(initial?.price ? String(Number(initial.price)) : '');
   const [negotiable, setNegotiable] = useState(initial?.price_negotiable ?? false);
+  // Area is typed in the owner's unit (sq ft, var or acres) and sent to the API in square feet.
+  const [areaUnit, setAreaUnit] = useState(initial?.area_unit ?? 'sqft');
+  const [area, setArea] = useState(initial?.area_sqft ? String(areaInUnit(initial.area_sqft, initial.area_unit)) : '');
+  const perUnit = AREA_UNITS.find((u) => u.value === areaUnit)?.perUnit ?? 1;
+  const areaSqft = area === '' ? null : Math.round(Number(area) * perUnit);
+  const isLand = type === 'plot';
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +73,7 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
       description: String(fd.get('description') ?? '').trim(),
       listing_purpose: purpose,
       property_type: type,
+      land_type: isLand ? textOrNull(fd.get('land_type')) : null,
       locality_id: localityChoice && localityChoice !== OTHER ? Number(localityChoice) : null,
       locality_name: localityChoice === OTHER ? localityName.trim() || null : null,
       public_address: String(fd.get('public_address') ?? '').trim(),
@@ -76,7 +83,8 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
       security_deposit: purpose === 'rent' ? numberOrNull(fd.get('security_deposit')) : null,
       maintenance_charges: numberOrNull(fd.get('maintenance_charges')),
       price_negotiable: negotiable,
-      area_sqft: numberOrNull(fd.get('area_sqft')),
+      area_sqft: areaSqft,
+      area_unit: areaUnit,
       bedrooms: numberOrNull(fd.get('bedrooms')),
       bathrooms: numberOrNull(fd.get('bathrooms')),
       balconies: numberOrNull(fd.get('balconies')),
@@ -136,7 +144,7 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
           <Field label="Title *" htmlFor="title" error={errors.title} hint="e.g. 3 BHK apartment near Judges Bungalow Road" className="sm:col-span-2">
             <Input id="title" name="title" defaultValue={initial?.title} required minLength={10} maxLength={160} />
           </Field>
-          <Field label="Description" htmlFor="description" error={errors.description} hint="At least 30 characters are needed before submitting for review." className="sm:col-span-2">
+          <Field label="Description" htmlFor="description" error={errors.description} hint="At least 30 characters are needed to submit. A detailed description (80+ characters) and 3 or more photos get a listing approved faster." className="sm:col-span-2">
             <Textarea id="description" name="description" defaultValue={initial?.description} rows={6} maxLength={5000} />
           </Field>
         </div>
@@ -195,39 +203,63 @@ export function PropertyForm({ initial, submitLabel, onSubmit, staff }: Property
 
       <Section title="Details">
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Area (sq ft) *" htmlFor="area_sqft" error={errors.area_sqft}>
-            <Input id="area_sqft" name="area_sqft" type="number" min={50} defaultValue={initial?.area_sqft ?? ''} />
+          {isLand && (
+            <Field label="Land type" htmlFor="land_type" error={errors.land_type}>
+              <select id="land_type" name="land_type" className={selectClass} defaultValue={initial?.land_type ?? ''}>
+                <option value="">Not specified</option>
+                {LAND_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </Field>
+          )}
+          <Field
+            label="Area *"
+            htmlFor="area_value"
+            error={errors.area_sqft}
+            hint={areaSqft && areaUnit !== 'sqft' ? `= ${areaSqft.toLocaleString('en-IN')} sq ft` : undefined}
+          >
+            <div className="flex gap-2">
+              <Input id="area_value" type="number" min={0} step="any" inputMode="decimal" value={area} onChange={(e) => setArea(e.target.value)} className="min-w-0" />
+              <select aria-label="Area unit" className={`${selectClass} w-auto`} value={areaUnit} onChange={(e) => setAreaUnit(e.target.value)}>
+                {AREA_UNITS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
+            </div>
           </Field>
-          <Field label={type === 'plot' ? 'Bedrooms' : 'Bedrooms (BHK) *'} htmlFor="bedrooms" error={errors.bedrooms}>
-            <Input id="bedrooms" name="bedrooms" type="number" min={0} max={20} defaultValue={initial?.bedrooms ?? ''} />
-          </Field>
-          <Field label="Bathrooms" htmlFor="bathrooms" error={errors.bathrooms}>
-            <Input id="bathrooms" name="bathrooms" type="number" min={0} max={20} defaultValue={initial?.bathrooms ?? ''} />
-          </Field>
-          <Field label="Balconies" htmlFor="balconies" error={errors.balconies}>
-            <Input id="balconies" name="balconies" type="number" min={0} max={20} defaultValue={initial?.balconies ?? ''} />
-          </Field>
-          <Field label="Floor" htmlFor="floor_number" error={errors.floor_number}>
-            <Input id="floor_number" name="floor_number" type="number" min={-3} max={200} defaultValue={initial?.floor_number ?? ''} />
-          </Field>
-          <Field label="Total floors" htmlFor="total_floors" error={errors.total_floors}>
-            <Input id="total_floors" name="total_floors" type="number" min={1} max={200} defaultValue={initial?.total_floors ?? ''} />
-          </Field>
-          <Field label="Furnishing" htmlFor="furnishing" error={errors.furnishing}>
-            <select id="furnishing" name="furnishing" className={selectClass} defaultValue={initial?.furnishing ?? ''}>
-              <option value="">Not specified</option>
-              {FURNISHING_TYPES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
-          </Field>
+          {!isLand && (
+            <>
+              <Field label="Bedrooms (BHK) *" htmlFor="bedrooms" error={errors.bedrooms}>
+                <Input id="bedrooms" name="bedrooms" type="number" min={0} max={20} defaultValue={initial?.bedrooms ?? ''} />
+              </Field>
+              <Field label="Bathrooms" htmlFor="bathrooms" error={errors.bathrooms}>
+                <Input id="bathrooms" name="bathrooms" type="number" min={0} max={20} defaultValue={initial?.bathrooms ?? ''} />
+              </Field>
+              <Field label="Balconies" htmlFor="balconies" error={errors.balconies}>
+                <Input id="balconies" name="balconies" type="number" min={0} max={20} defaultValue={initial?.balconies ?? ''} />
+              </Field>
+              <Field label="Floor" htmlFor="floor_number" error={errors.floor_number}>
+                <Input id="floor_number" name="floor_number" type="number" min={-3} max={200} defaultValue={initial?.floor_number ?? ''} />
+              </Field>
+              <Field label="Total floors" htmlFor="total_floors" error={errors.total_floors}>
+                <Input id="total_floors" name="total_floors" type="number" min={1} max={200} defaultValue={initial?.total_floors ?? ''} />
+              </Field>
+              <Field label="Furnishing" htmlFor="furnishing" error={errors.furnishing}>
+                <select id="furnishing" name="furnishing" className={selectClass} defaultValue={initial?.furnishing ?? ''}>
+                  <option value="">Not specified</option>
+                  {FURNISHING_TYPES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                </select>
+              </Field>
+            </>
+          )}
           <Field label="Facing" htmlFor="facing" error={errors.facing}>
             <select id="facing" name="facing" className={selectClass} defaultValue={initial?.facing ?? ''}>
               <option value="">Not specified</option>
               {FACING_OPTIONS.map((f) => <option key={f} value={f}>{humanize(f)}</option>)}
             </select>
           </Field>
-          <Field label="Property age (years)" htmlFor="property_age_years" error={errors.property_age_years}>
-            <Input id="property_age_years" name="property_age_years" type="number" min={0} max={150} defaultValue={initial?.property_age_years ?? ''} />
-          </Field>
+          {!isLand && (
+            <Field label="Property age (years)" htmlFor="property_age_years" error={errors.property_age_years}>
+              <Input id="property_age_years" name="property_age_years" type="number" min={0} max={150} defaultValue={initial?.property_age_years ?? ''} />
+            </Field>
+          )}
           <Field label="Available from" htmlFor="available_from" error={errors.available_from}>
             <Input id="available_from" name="available_from" type="date" defaultValue={initial?.available_from ?? ''} />
           </Field>

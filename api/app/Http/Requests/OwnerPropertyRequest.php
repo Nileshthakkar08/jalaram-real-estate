@@ -33,6 +33,7 @@ class OwnerPropertyRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'listing_purpose' => ['required', Rule::in(Property::PURPOSES)],
             'property_type' => ['required', Rule::in(Property::TYPES)],
+            'land_type' => ['nullable', Rule::in(Property::LAND_TYPES)],
             // Either pick a locality from the list, or type one in ("Other").
             'locality_id' => ['nullable', 'required_without:locality_name', 'integer', Rule::exists('localities', 'id')->where('is_active', true)],
             'locality_name' => ['nullable', 'required_without:locality_id', 'string', 'min:2', 'max:80', 'regex:/^[\pL\pN .,\'()&-]+$/u'],
@@ -43,7 +44,9 @@ class OwnerPropertyRequest extends FormRequest
             'security_deposit' => ['nullable', 'numeric', 'min:0', 'max:9999999999', Rule::prohibitedIf($this->input('listing_purpose') === 'sale')],
             'maintenance_charges' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
             'price_negotiable' => ['boolean'],
-            'area_sqft' => ['required', 'integer', 'min:50', 'max:1000000'],
+            // Up to ~2,300 acres, so large farmland fits.
+            'area_sqft' => ['required', 'integer', 'min:50', 'max:100000000'],
+            'area_unit' => ['nullable', Rule::in(array_keys(Property::AREA_UNITS))],
             'bedrooms' => [$isPlot ? 'nullable' : 'required', 'integer', 'between:0,20'],
             'bathrooms' => ['nullable', 'integer', 'between:0,20'],
             'balconies' => ['nullable', 'integer', 'between:0,20'],
@@ -81,6 +84,14 @@ class OwnerPropertyRequest extends FormRequest
         $data['price_negotiable'] = $this->boolean('price_negotiable');
         if (($data['listing_purpose'] ?? null) === 'sale') {
             $data['security_deposit'] = null;
+        }
+        $data['area_unit'] ??= 'sqft';
+        if (($data['property_type'] ?? null) === 'plot') {
+            foreach (Property::BUILDING_ONLY as $field) {
+                $data[$field] = null;
+            }
+        } else {
+            $data['land_type'] = null;
         }
 
         return $data;

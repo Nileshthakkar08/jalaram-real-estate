@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useApi } from '@/hooks/use-api';
 import { api, errorMessage } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { formatDate, formatPrice, humanize, listingStatusLabels, propertyTypeLabel } from '@/lib/format';
+import { formatArea, formatDate, formatPrice, humanize, listingStatusLabels, propertyTypeLabel } from '@/lib/format';
 import type { ManagedProperty } from '@/lib/types';
 
 const STATUS_HELP: Record<string, string> = {
@@ -136,13 +136,13 @@ export default function OwnerPropertyDetailPage() {
               <Section title="Details">
                 <dl>
                   <DetailRow label="Listing for">{p.listing_purpose === 'sale' ? 'Sale' : 'Rent'}</DetailRow>
-                  <DetailRow label="Type">{propertyTypeLabel(p.property_type)}</DetailRow>
+                  <DetailRow label="Type">{propertyTypeLabel(p.property_type, p.land_type)}</DetailRow>
                   <DetailRow label={p.listing_purpose === 'rent' ? 'Monthly rent' : 'Asking price'}>{formatPrice(p.price, p.listing_purpose)}</DetailRow>
                   {p.security_deposit && <DetailRow label="Deposit">{formatPrice(p.security_deposit)}</DetailRow>}
                   <DetailRow label="Locality">{p.locality?.name}</DetailRow>
                   <DetailRow label="Public location">{p.public_address}</DetailRow>
                   <DetailRow label="Private address">{p.private_address || '—'}</DetailRow>
-                  <DetailRow label="Area">{p.area_sqft} sq ft</DetailRow>
+                  <DetailRow label="Area">{formatArea(p.area_sqft, p.area_unit)}</DetailRow>
                   <DetailRow label="Bedrooms">{p.bedrooms ?? '—'}</DetailRow>
                   <DetailRow label="Furnishing">{humanize(p.furnishing)}</DetailRow>
                   <DetailRow label="Amenities">{p.amenities?.map((a) => a.name).join(', ') || '—'}</DetailRow>

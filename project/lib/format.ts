@@ -97,12 +97,17 @@ export function humanize(value: string | null | undefined): string {
   return value.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase());
 }
 
-export function propertyTypeLabel(type: string): string {
+/** For land, the kind of land when known ("Agricultural land"), else "Plot / Land". */
+export function propertyTypeLabel(type: string, landType?: string | null): string {
+  if (type === 'plot' && landType) {
+    const land = LAND_TYPES.find((t) => t.value === landType);
+    if (land) return land.label;
+  }
   const labels: Record<string, string> = {
     apartment: 'Apartment',
     independent_house: 'Independent House',
     villa: 'Villa',
-    plot: 'Plot',
+    plot: 'Plot / Land',
   };
   return labels[type] ?? type;
 }
@@ -193,8 +198,45 @@ export const PROPERTY_TYPES = [
   { value: 'apartment', label: 'Apartment' },
   { value: 'independent_house', label: 'Independent House' },
   { value: 'villa', label: 'Villa' },
-  { value: 'plot', label: 'Plot' },
+  { value: 'plot', label: 'Plot / Land' },
 ];
+
+export const LAND_TYPES = [
+  { value: 'residential', label: 'Residential plot' },
+  { value: 'commercial', label: 'Commercial plot' },
+  { value: 'agricultural', label: 'Agricultural land' },
+  { value: 'industrial', label: 'Industrial land' },
+];
+
+/** Units owners can enter the area in; square feet per unit (1 var = 1 sq yard = 9 sq ft). Matches Property::AREA_UNITS. */
+export const AREA_UNITS = [
+  { value: 'sqft', label: 'sq ft', perUnit: 1 },
+  { value: 'sqyd', label: 'var (sq yd)', perUnit: 9 },
+  { value: 'acre', label: 'acres', perUnit: 43560 },
+];
+
+const areaUnit = (unit: string | null | undefined) => AREA_UNITS.find((u) => u.value === unit) ?? AREA_UNITS[0];
+
+/** Area in the owner's unit converted from square feet, rounded to 2 decimals. */
+export function areaInUnit(sqft: number, unit: string | null | undefined): number {
+  return Math.round((sqft / areaUnit(unit).perUnit) * 100) / 100;
+}
+
+/** Compact form for cards: "1,305 sq ft", "145 var" or "10 acres". */
+export function formatAreaShort(sqft: number, unit?: string | null): string {
+  const u = areaUnit(unit);
+  if (u.value === 'sqft') return `${sqft.toLocaleString('en-IN')} sq ft`;
+  return `${areaInUnit(sqft, u.value).toLocaleString('en-IN')} ${u.value === 'sqyd' ? 'var' : u.label}`;
+}
+
+/** "1,305 sq ft", or "145 var (1,305 sq ft)" / "10 acres (4,35,600 sq ft)" when entered in another unit. */
+export function formatArea(sqft: number, unit?: string | null): string {
+  const inSqft = `${sqft.toLocaleString('en-IN')} sq ft`;
+  const u = areaUnit(unit);
+  if (u.value === 'sqft') return inSqft;
+  const name = u.value === 'sqyd' ? 'var' : u.label;
+  return `${areaInUnit(sqft, u.value).toLocaleString('en-IN')} ${name} (${inSqft})`;
+}
 
 export const FURNISHING_TYPES = [
   { value: 'unfurnished', label: 'Unfurnished' },

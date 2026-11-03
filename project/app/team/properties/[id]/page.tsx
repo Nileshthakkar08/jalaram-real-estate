@@ -16,7 +16,7 @@ import { useApi } from '@/hooks/use-api';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { dealStatusBadge, formatDate, formatDateTime, formatPrice, humanize, leadStatusBadge, listingStatusLabels, propertyTypeLabel } from '@/lib/format';
+import { dealStatusBadge, formatArea, formatDate, formatDateTime, formatPrice, humanize, leadStatusBadge, listingStatusLabels, propertyTypeLabel } from '@/lib/format';
 import type { Deal, Lead, ManagedProperty, OwnerNote } from '@/lib/types';
 
 const NOTE_TYPES = ['availability', 'confirmed_price', 'viewing_availability', 'negotiation', 'owner_response', 'agreed_terms', 'general'];
@@ -114,12 +114,12 @@ export default function TeamPropertyPage() {
                 </Section>
                 <Section title="Listing">
                   <dl>
-                    <DetailRow label="Type">{propertyTypeLabel(p.property_type)} · {p.listing_purpose}</DetailRow>
+                    <DetailRow label="Type">{propertyTypeLabel(p.property_type, p.land_type)} · {p.listing_purpose}</DetailRow>
                     <DetailRow label={p.listing_purpose === 'rent' ? 'Rent' : 'Asking'}>{formatPrice(p.price, p.listing_purpose)}{p.price_negotiable && ' (negotiable)'}</DetailRow>
                     {p.security_deposit && <DetailRow label="Deposit">{formatPrice(p.security_deposit)}</DetailRow>}
                     <DetailRow label="Locality">{p.locality?.name}</DetailRow>
                     <DetailRow label="Public location">{p.public_address}</DetailRow>
-                    <DetailRow label="Area / BHK">{p.area_sqft} sq ft · {p.bedrooms ?? '—'} BHK</DetailRow>
+                    <DetailRow label="Area / BHK">{formatArea(p.area_sqft, p.area_unit)}{p.property_type !== 'plot' && ` · ${p.bedrooms ?? '—'} BHK`}</DetailRow>
                     <DetailRow label="Furnishing">{humanize(p.furnishing)}</DetailRow>
                     <DetailRow label="Published">{formatDate(p.published_at)}</DetailRow>
                     <DetailRow label="Expires">{formatDate(p.expires_at)}</DetailRow>

@@ -4,7 +4,7 @@ import { PropertyGallery } from '@/components/site/property-gallery';
 import { PropertyContactPanel } from '@/components/site/property-contact-panel';
 import { serverApi, ServerApiError } from '@/lib/server-api';
 import { listingHeading, listingPath } from '@/lib/listing-path';
-import { formatPrice, formatDate, propertyTypeLabel, humanize } from '@/lib/format';
+import { formatArea, formatPrice, formatDate, propertyTypeLabel, humanize } from '@/lib/format';
 import {
   MapPin, Maximize, BedDouble, Bath, CheckCircle2, Sofa, Car, Zap, ShieldCheck,
   ChevronRight, Home, Building2, CalendarDays, Info
@@ -174,7 +174,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                   {property.listing_purpose === 'sale' ? 'For Sale' : 'For Rent'}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
-                  {propertyTypeLabel(property.property_type)}
+                  {propertyTypeLabel(property.property_type, property.land_type)}
                 </span>
                 <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
                   Available
@@ -198,13 +198,19 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </div>
 
             {/* Key specs */}
-            <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-4">
-              {[
-                { icon: BedDouble, label: 'Bedrooms', value: property.bedrooms ?? '—' },
-                { icon: Bath, label: 'Bathrooms', value: property.bathrooms ?? '—' },
-                { icon: Maximize, label: 'Area', value: `${property.area_sqft.toLocaleString('en-IN')} sq ft` },
-                { icon: Sofa, label: 'Furnishing', value: property.furnishing ? humanize(property.furnishing) : '—' },
-              ].map((spec) => (
+            <div className={`grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-5 ${property.property_type === 'plot' ? '' : 'sm:grid-cols-4'}`}>
+              {(property.property_type === 'plot'
+                ? [
+                    { icon: Maximize, label: 'Area', value: formatArea(property.area_sqft, property.area_unit) },
+                    { icon: Home, label: 'Land type', value: propertyTypeLabel('plot', property.land_type) },
+                  ]
+                : [
+                    { icon: BedDouble, label: 'Bedrooms', value: property.bedrooms ?? '—' },
+                    { icon: Bath, label: 'Bathrooms', value: property.bathrooms ?? '—' },
+                    { icon: Maximize, label: 'Area', value: formatArea(property.area_sqft, property.area_unit) },
+                    { icon: Sofa, label: 'Furnishing', value: property.furnishing ? humanize(property.furnishing) : '—' },
+                  ]
+              ).map((spec) => (
                 <div key={spec.label} className="text-center">
                   <spec.icon className="mx-auto h-6 w-6 text-accent" />
                   <p className="mt-2 text-lg font-semibold capitalize">{spec.value}</p>
@@ -289,7 +295,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <dt className="text-sm text-muted-foreground">Property Type</dt>
-                  <dd className="text-sm font-medium">{propertyTypeLabel(property.property_type)}</dd>
+                  <dd className="text-sm font-medium">{propertyTypeLabel(property.property_type, property.land_type)}</dd>
                 </div>
                 <div className="flex justify-between border-b border-border pb-2">
                   <dt className="text-sm text-muted-foreground">Listing Type</dt>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin, Maximize, BedDouble, Bath, Share2, Video } from 'lucide-react';
-import { listingPrice, propertyTypeLabel } from '@/lib/format';
+import { formatAreaShort, listingPrice, propertyTypeLabel } from '@/lib/format';
 import type { PublicProperty } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -112,13 +112,13 @@ export function PropertyCard({ property, className }: PropertyCardProps) {
           )}
           <span className="flex items-center gap-1">
             <Maximize className="h-4 w-4" />
-            {property.area_sqft.toLocaleString('en-IN')} sq ft
+            {formatAreaShort(property.area_sqft, property.area_unit)}
           </span>
         </div>
 
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {propertyTypeLabel(property.property_type)}
+            {propertyTypeLabel(property.property_type, property.land_type)}
           </span>
           <span className="text-xs text-muted-foreground">{property.reference_code}</span>
         </div>

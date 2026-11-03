@@ -28,11 +28,20 @@ class Property extends Model
 
     public const MAX_IMAGES = 10;
 
+    /** Kinds of land, for listings of type `plot`. */
+    public const LAND_TYPES = ['residential', 'commercial', 'agricultural', 'industrial'];
+
+    /** Units an owner may enter the area in, with square feet per unit (1 var = 1 sq yard = 9 sq ft). */
+    public const AREA_UNITS = ['sqft' => 1, 'sqyd' => 9, 'acre' => 43560];
+
+    /** Fields that only describe buildings; cleared on land listings. */
+    public const BUILDING_ONLY = ['bedrooms', 'bathrooms', 'balconies', 'floor_number', 'total_floors', 'furnishing', 'property_age_years'];
+
     /** Fields an owner may edit. Status and moderation fields are deliberately excluded. */
     public const OWNER_EDITABLE = [
-        'title', 'description', 'listing_purpose', 'property_type', 'locality_id', 'public_address', 'private_address',
+        'title', 'description', 'listing_purpose', 'property_type', 'land_type', 'locality_id', 'public_address', 'private_address',
         'pincode', 'price', 'security_deposit', 'maintenance_charges', 'price_negotiable', 'area_sqft', 'bedrooms',
-        'bathrooms', 'balconies', 'floor_number', 'total_floors', 'furnishing', 'facing', 'property_age_years',
+        'area_unit', 'bathrooms', 'balconies', 'floor_number', 'total_floors', 'furnishing', 'facing', 'property_age_years',
         'available_from', 'owner_contact_name', 'owner_contact_phone', 'owner_contact_email',
     ];
 
@@ -48,6 +57,7 @@ class Property extends Model
         'maintenance_charges' => 'decimal:2',
         'price_negotiable' => 'boolean',
         'is_featured' => 'boolean',
+        'review_flags' => 'array',
         'area_sqft' => 'integer',
         'bedrooms' => 'integer',
         'bathrooms' => 'integer',

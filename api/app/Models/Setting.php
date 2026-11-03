@@ -22,6 +22,7 @@ class Setting extends Model
         'social_facebook' => true,
         'rera_registration' => true,
         'listing_validity_days' => false,
+        'auto_approve_listings' => false,
         'lead_notification_email' => false,
     ];
 

@@ -5,7 +5,7 @@ import { Loader2, Save } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { DataState } from '@/components/shared/states';
 import { Section } from '@/components/shared/section';
-import { Field } from '@/components/shared/form-field';
+import { Field, selectClass } from '@/components/shared/form-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApi } from '@/hooks/use-api';
@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface Setting { key: string; value: string | null; is_public: boolean }
 
-const META: Record<string, { label: string; hint?: string; type?: string }> = {
+const META: Record<string, { label: string; hint?: string; type?: string; options?: { value: string; label: string }[] }> = {
   business_phone: { label: 'Business phone', hint: 'Shown in the header, footer and call buttons, e.g. +91 79 XXXX XXXX.' },
   business_whatsapp: { label: 'WhatsApp number', hint: 'Digits with country code, no + or spaces, e.g. 9198XXXXXXXX. Enables WhatsApp buttons.' },
   business_email: { label: 'Business email', type: 'email' },
@@ -25,6 +25,15 @@ const META: Record<string, { label: string; hint?: string; type?: string }> = {
   rera_registration: { label: 'RERA registration number', hint: 'Only enter a registration you actually hold.' },
   listing_validity_days: { label: 'Listing validity (days)', type: 'number', hint: 'Published listings expire after this many days. 0 = never.' },
   lead_notification_email: { label: 'Lead notification email', type: 'email', hint: 'Internal only.' },
+  auto_approve_listings: {
+    label: 'Automatic listing approval',
+    hint: 'Checks photos, description, price, contact details in the text, new areas and duplicates. Listings with any problem always wait for your team.',
+    options: [
+      { value: 'all', label: 'Approve automatically when every check passes' },
+      { value: 'trusted', label: 'Only for owners your team has approved before' },
+      { value: 'off', label: 'Off: the team reviews every listing' },
+    ],
+  },
 };
 
 export default function SettingsPage() {
@@ -61,7 +70,13 @@ export default function SettingsPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   {settings.filter((s) => s.is_public === group.pub).map((s) => (
                     <Field key={s.key} label={META[s.key]?.label ?? s.key} htmlFor={`s-${s.key}`} hint={META[s.key]?.hint} error={errors[s.key]}>
-                      <Input id={`s-${s.key}`} name={s.key} type={META[s.key]?.type ?? 'text'} defaultValue={s.value ?? ''} />
+                      {META[s.key]?.options ? (
+                        <select id={`s-${s.key}`} name={s.key} className={selectClass} defaultValue={s.value ?? META[s.key].options![0].value}>
+                          {META[s.key].options!.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </select>
+                      ) : (
+                        <Input id={`s-${s.key}`} name={s.key} type={META[s.key]?.type ?? 'text'} defaultValue={s.value ?? ''} />
+                      )}
                     </Field>
                   ))}
                 </div>

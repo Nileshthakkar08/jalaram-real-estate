@@ -20,6 +20,7 @@ class OwnerPropertyResource extends JsonResource
             'description' => $this->description,
             'listing_purpose' => $this->listing_purpose,
             'property_type' => $this->property_type,
+            'land_type' => $this->land_type,
             'locality_id' => $this->locality_id,
             'locality' => $this->whenLoaded('locality', fn () => ['id' => $this->locality->id, 'name' => $this->locality->name, 'slug' => $this->locality->slug]),
             'public_address' => $this->public_address,
@@ -30,6 +31,7 @@ class OwnerPropertyResource extends JsonResource
             'maintenance_charges' => $this->maintenance_charges,
             'price_negotiable' => $this->price_negotiable,
             'area_sqft' => $this->area_sqft,
+            'area_unit' => $this->area_unit,
             'bedrooms' => $this->bedrooms,
             'bathrooms' => $this->bathrooms,
             'balconies' => $this->balconies,
@@ -60,6 +62,7 @@ class OwnerPropertyResource extends JsonResource
 
             // Staff-only fields
             'moderation_note' => $this->when($isStaff, $this->moderation_note),
+            'review_flags' => $this->when($isStaff, $this->review_flags ?? []),
             'owner' => $this->when($isStaff && $this->relationLoaded('owner'), fn () => [
                 'id' => $this->owner->id, 'name' => $this->owner->name, 'email' => $this->owner->email,
                 'phone' => $this->owner->phone, 'is_active' => $this->owner->is_active,

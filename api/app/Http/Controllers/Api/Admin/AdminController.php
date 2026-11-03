@@ -12,11 +12,13 @@ use App\Models\PushSubscription;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\ListingAutoReviewer;
 use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -73,6 +75,7 @@ class AdminController extends Controller
             'settings.social_facebook' => ['nullable', 'url:https', 'max:300'],
             'settings.rera_registration' => ['nullable', 'string', 'max:80'],
             'settings.listing_validity_days' => ['nullable', 'integer', 'between:0,730'],
+            'settings.auto_approve_listings' => ['nullable', Rule::in(ListingAutoReviewer::MODES)],
             'settings.lead_notification_email' => ['nullable', 'email', 'max:160'],
         ], ['settings.business_whatsapp.regex' => 'Enter the WhatsApp number as digits with country code, e.g. 919800000000.']);
 

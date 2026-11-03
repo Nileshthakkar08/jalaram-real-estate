@@ -78,9 +78,11 @@ export interface PublicProperty {
   title: string;
   listing_purpose: ListingPurpose;
   property_type: PropertyType;
+  land_type?: string | null;
   price: Money;
   price_negotiable: boolean;
   area_sqft: number;
+  area_unit?: string;
   bedrooms: number | null;
   bathrooms: number | null;
   furnishing: FurnishingStatus | null;
@@ -115,6 +117,7 @@ export interface ManagedProperty {
   description: string;
   listing_purpose: ListingPurpose;
   property_type: PropertyType;
+  land_type?: string | null;
   locality_id: number;
   locality?: { id: number; name: string; slug: string };
   public_address: string;
@@ -125,6 +128,7 @@ export interface ManagedProperty {
   maintenance_charges: Money | null;
   price_negotiable: boolean;
   area_sqft: number;
+  area_unit?: string;
   bedrooms: number | null;
   bathrooms: number | null;
   balconies: number | null;
@@ -154,6 +158,8 @@ export interface ManagedProperty {
   amenities?: { id: number; name: string; slug: string }[];
   // staff-only
   moderation_note?: string | null;
+  /** Why automatic review left this listing for a person (empty when nothing was flagged). */
+  review_flags?: string[];
   owner?: { id: number; name: string; email: string; phone: string | null; is_active: boolean };
   coordination_contact?: { name: string | null; phone: string | null; email: string | null };
   reviewer?: { id: number; name: string } | null;

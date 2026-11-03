@@ -37,3 +37,4 @@ class PruneVideoUploads extends Command
         return self::SUCCESS;
     }
 }
+ 
