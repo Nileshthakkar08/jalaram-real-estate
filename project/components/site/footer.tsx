@@ -131,7 +131,8 @@ export function Footer({ settings }: { settings: PublicSettings }) {
 
         <div className="mt-12 border-t border-primary-foreground/10 pt-6">
           <p className="text-xs text-primary-foreground/50">
-            &copy; {new Date().getFullYear()} {BUSINESS.name}. All rights reserved. Listings are reviewed by our team
+            &copy; {new Date().getFullYear()} {BUSINESS.name}. Founded by{' '}
+            <Link href="/about#founder" className="underline-offset-2 hover:underline">{BUSINESS.founder.name}</Link>. All rights reserved. Listings are reviewed by our team
             before publishing; this review is not a legal title verification. Please verify all documents before any transaction.
           </p>
         </div>

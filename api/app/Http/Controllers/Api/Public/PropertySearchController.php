@@ -7,12 +7,19 @@ use App\Http\Resources\PublicPropertyResource;
 use App\Models\Property;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class PropertySearchController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    /**
+     * Search results are shared by everyone running the same search, so they are kept briefly.
+     * During a traffic spike (e.g. a reel linking to one search) the database runs each distinct
+     * search once per window instead of once per visitor. New listings appear within this time.
+     */
+    public const CACHE_SECONDS = 60;
+
+    public function index(Request $request): JsonResponse
     {
         $filters = $request->validate([
             'purpose' => ['nullable', Rule::in(Property::PURPOSES)],
@@ -29,6 +36,15 @@ class PropertySearchController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        ksort($filters);
+        $key = 'property-search:'.sha1($request->url().'|'.json_encode($filters));
+
+        return response()->json(Cache::remember($key, self::CACHE_SECONDS, fn () => $this->search($request, $filters)));
+    }
+
+    /** @return array<string, mixed> the paginated JSON body */
+    private function search(Request $request, array $filters): array
+    {
         $query = Property::query()->publiclyVisible()
             ->with(['locality', 'images' => fn ($q) => $q->limit(1)])
             ->when($filters['purpose'] ?? null, fn ($q, $v) => $q->where('listing_purpose', $v))
@@ -51,7 +67,8 @@ class PropertySearchController extends Controller
             default => $query->orderByDesc('published_at')->orderByDesc('id'),
         };
 
-        return PublicPropertyResource::collection($query->paginate($filters['per_page'] ?? 12)->withQueryString());
+        return PublicPropertyResource::collection($query->paginate($filters['per_page'] ?? 12)->withQueryString())
+            ->response($request)->getData(true);
     }
 
     public function show(string $slug): JsonResponse

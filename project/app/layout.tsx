@@ -21,7 +21,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Jalaram Real Estate — Find Your Property. Move with Confidence.',
+    default: 'Jalaram Real Estate — Real Estate Agent in Ahmedabad | Buy, Rent & Sell Property',
     template: '%s | Jalaram Real Estate',
   },
   description:
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     'property broker Ahmedabad',
   ],
   openGraph: {
-    title: 'Jalaram Real Estate — Find Your Property. Move with Confidence.',
+    title: 'Jalaram Real Estate — Real Estate Agent in Ahmedabad',
     description:
       'Premium property brokerage in Ahmedabad, Gujarat. Buy, rent, and sell residential properties with confidence.',
     type: 'website',

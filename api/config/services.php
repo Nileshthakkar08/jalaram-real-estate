@@ -35,12 +35,17 @@ return [
         ],
     ],
 
-
     // Browser push notifications for new listings. Generate keys with: php artisan push:vapid
     'webpush' => [
         'public_key' => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),
         'subject' => env('VAPID_SUBJECT', 'mailto:no-reply@localhost'),
+    ],
+
+    // Shared secret the Next.js server sends (X-Internal-Key) so its page renders skip the per-IP
+    // API rate limit. Set the same random value as API_INTERNAL_KEY on Netlify. Empty disables it.
+    'internal_api' => [
+        'key' => env('INTERNAL_API_KEY'),
     ],
 
 ];

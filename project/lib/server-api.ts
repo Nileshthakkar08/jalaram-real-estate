@@ -7,6 +7,11 @@ import type { Locality, Paginated, PublicProperty, PublicSettings } from '@/lib/
  */
 const API = (process.env.API_INTERNAL_URL || 'http://127.0.0.1:8000').replace(/\/$/, '') + '/api/v1';
 
+// Lets these renders skip the API's per-IP rate limit (all visitors' pages are rendered from a few
+// Netlify addresses). Must match INTERNAL_API_KEY on the API server; never sent to the browser.
+const HEADERS: Record<string, string> = { Accept: 'application/json' };
+if (process.env.API_INTERNAL_KEY) HEADERS['X-Internal-Key'] = process.env.API_INTERNAL_KEY;
+
 export class ServerApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -16,7 +21,7 @@ export class ServerApiError extends Error {
 async function get<T>(path: string, revalidate = 60): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API}${path}`, { headers: { Accept: 'application/json' }, next: { revalidate } });
+    res = await fetch(`${API}${path}`, { headers: HEADERS, next: { revalidate } });
   } catch {
     throw new ServerApiError(503, 'The property service is unavailable.');
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, ExternalLink, Star, XCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { DataState } from '@/components/shared/states';
@@ -31,6 +31,7 @@ const MODERATOR_TRANSITIONS: Record<string, string[]> = {
 
 export default function AdminPropertyPage() {
   const { id } = useParams<{ id: string }>();
+  const tab = useSearchParams().get('tab');
   const { data, loading, error, reload, setData } = useApi<{ data: ManagedProperty; history: AuditLog[] }>(`/admin/properties/${id}`);
 
   const run = async (fn: () => Promise<unknown>, message: string) => {
@@ -52,13 +53,17 @@ export default function AdminPropertyPage() {
               description={<span className="flex flex-wrap items-center gap-2">{p.reference_code} <StatusBadge {...listingStatusLabels(p.status)} /> · Owner {p.owner?.name} ({p.owner?.email})</span>}
               actions={
                 <>
+                  {['pending', 'draft', 'rejected'].includes(p.status) && (
+                    <ActionDialog trigger={<Button className="gap-2"><CheckCircle2 className="h-4 w-4" /> {p.status === 'pending' ? 'Approve & publish' : 'Publish'}</Button>}
+                      title={p.status === 'pending' ? 'Approve listing' : 'Publish listing'}
+                      description={p.status === 'pending' ? 'The listing will appear on the website immediately.' : `This ${p.status} listing will appear on the website immediately, without the owner submitting it. It needs at least one photo or a video.`}
+                      confirmLabel={p.status === 'pending' ? 'Approve' : 'Publish'}
+                      onConfirm={async (fd) => run(() => api.post(`/admin/properties/${id}/approve`, { note: fd.get('note') || null }), 'Listing published')}>
+                      <Textarea name="note" placeholder="Internal note (optional)" />
+                    </ActionDialog>
+                  )}
                   {p.status === 'pending' && (
                     <>
-                      <ActionDialog trigger={<Button className="gap-2"><CheckCircle2 className="h-4 w-4" /> Approve & publish</Button>} title="Approve listing"
-                        description="The listing will appear on the website immediately." confirmLabel="Approve"
-                        onConfirm={async (fd) => run(() => api.post(`/admin/properties/${id}/approve`, { note: fd.get('note') || null }), 'Listing published')}>
-                        <Textarea name="note" placeholder="Internal note (optional)" />
-                      </ActionDialog>
                       <ActionDialog trigger={<Button variant="outline" className="gap-2 text-destructive"><XCircle className="h-4 w-4" /> Reject</Button>} title="Reject listing"
                         description="The owner will see this reason and can fix the listing and resubmit." confirmLabel="Reject" destructive
                         onConfirm={async (fd) => run(() => api.post(`/admin/properties/${id}/reject`, { reason: fd.get('reason') }), 'Listing rejected')}>
@@ -93,7 +98,7 @@ export default function AdminPropertyPage() {
                 </ul>
               </div>
             )}
-            <Tabs defaultValue="review">
+            <Tabs defaultValue={tab === 'photos' || tab === 'edit' ? tab : 'review'}>
               <TabsList>
                 <TabsTrigger value="review">Review</TabsTrigger>
                 <TabsTrigger value="edit">Edit details</TabsTrigger>

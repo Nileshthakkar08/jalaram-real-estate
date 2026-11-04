@@ -18,6 +18,9 @@ return [
     // Public property photos: 'public' (local) or 's3' (any S3-compatible bucket, e.g. AWS, R2, Spaces).
     'property_image_disk' => env('PROPERTY_IMAGE_DISK', 'public'),
 
+    // Seconds a photo upload waits for a free processing slot (PropertyImageService::PROCESSING_SLOTS).
+    'image_processing_wait' => 30,
+
     // Deal documents must stay private: 'local' (storage/app/private) or a private S3 bucket.
     'deal_document_disk' => env('DEAL_DOCUMENT_DISK', 'local'),
 

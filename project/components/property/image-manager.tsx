@@ -4,11 +4,15 @@ import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { ArrowDown, ArrowUp, ImagePlus, Loader2, Star, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { api, errorMessage } from '@/lib/api';
+import { api, ApiError, errorMessage } from '@/lib/api';
+import { shrinkImage } from '@/lib/shrink-image';
 import type { PropertyImage } from '@/lib/types';
 
 const MAX_IMAGES = 10;
+// Limit after shrinking (the server's limit). Phone photos above it are shrunk in the browser first,
+// so the limit on the file the owner picks is much higher.
 const MAX_BYTES = 5 * 1024 * 1024;
+const MAX_PICKED_BYTES = 40 * 1024 * 1024;
 const TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 interface ImageManagerProps {
@@ -33,7 +37,7 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
     const problems: string[] = [];
     list.forEach((f) => {
       if (!TYPES.includes(f.type)) problems.push(`${f.name}: use JPEG, PNG or WebP.`);
-      else if (f.size > MAX_BYTES) problems.push(`${f.name}: larger than 5 MB.`);
+      else if (f.size > MAX_PICKED_BYTES) problems.push(`${f.name}: larger than 40 MB.`);
     });
     if (list.length > remaining) problems.push(`You can add ${remaining} more photo${remaining === 1 ? '' : 's'} (maximum ${MAX_IMAGES}).`);
     if (problems.length) {
@@ -43,7 +47,7 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
     }
 
     // One photo per request: requests pass through Netlify's proxy, which rejects bodies over
-    // ~6 MB (413). Each photo is at most 5 MB, so uploading them one by one always fits.
+    // ~6 MB (413). Each photo is shrunk and at most 5 MB, so uploading them one by one always fits.
     setBusy('upload');
     const failed: string[] = [];
     let resubmitted = false;
@@ -51,9 +55,11 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
       for (let i = 0; i < list.length; i++) {
         const file = list[i];
         setProgress({ done: i, total: list.length });
-        const fd = new FormData();
-        fd.append('images[]', file);
         try {
+          const small = await shrinkImage(file);
+          if (small.size > MAX_BYTES) throw new ApiError(413, 'Still larger than 5 MB after resizing. Try a different photo.');
+          const fd = new FormData();
+          fd.append('images[]', small);
           const res = await api.post<{ data: PropertyImage[]; meta?: { resubmitted_for_review?: boolean } }>(`${basePath}/images`, fd);
           resubmitted ||= !!res.meta?.resubmitted_for_review;
           onChange(res.data, { resubmitted_for_review: resubmitted });
@@ -108,7 +114,7 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {images.length} of {MAX_IMAGES} photos · JPEG, PNG or WebP up to 5 MB each. The first photo is the cover.
+          {images.length} of {MAX_IMAGES} photos · JPEG, PNG or WebP. Large phone photos are resized automatically. The first photo is the cover.
           Location data is removed from photos automatically.
         </p>
         <input ref={input} type="file" accept={TYPES.join(',')} multiple className="hidden" onChange={(e) => upload(e.target.files)} aria-label="Choose photos" />

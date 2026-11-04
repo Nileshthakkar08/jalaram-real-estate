@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
  * Owner:     draft|rejected → pending (submit); published ↔ unavailable; → closed (withdraw);
  *            editing a live listing sends it back to pending for re-review.
  * System:    pending → published when ListingAutoReviewer flags nothing and the admin setting allows it.
- * Moderator: pending → published|rejected; published → suspended|unavailable|closed|expired;
+ * Moderator: draft|pending|rejected → published (approve); pending → rejected; creates listings as drafts; published → suspended|unavailable|closed|expired;
  *            suspended|unavailable|expired|closed → published; any live state → closed.
  */
 class PropertyWorkflow
@@ -82,17 +82,7 @@ class PropertyWorkflow
             throw new InvalidTransitionException("A {$property->status} listing cannot be submitted for review.");
         }
 
-        $missing = [];
-        // A walkthrough video can stand in for photos.
-        if ($property->images()->count() === 0 && ! $property->video_path) {
-            $missing['images'] = ['Add at least one photo or a video before submitting.'];
-        }
-        if (mb_strlen(trim((string) $property->description)) < 30) {
-            $missing['description'] = ['Write a description of at least 30 characters before submitting.'];
-        }
-        if ($missing) {
-            throw ValidationException::withMessages($missing);
-        }
+        $this->assertComplete($property);
 
         $property = $this->transition($property, 'pending', 'property.submitted', [
             'submitted_at' => now(),
@@ -127,13 +117,34 @@ class PropertyWorkflow
         return $this->transition($property, 'closed', 'property.withdrawn_by_owner', [], $reason);
     }
 
+    /** Moderators can also publish a draft or rejected listing directly, without the owner submitting it. */
     public function approve(Property $property, ?string $note = null): Property
     {
+        if (! in_array($property->status, ['pending', 'draft', 'rejected'], true)) {
+            throw new InvalidTransitionException("A {$property->status} listing cannot be approved.");
+        }
         if ($property->status !== 'pending') {
-            throw new InvalidTransitionException('Only listings pending review can be approved.');
+            $this->assertComplete($property);
+            $property->submitted_at ??= now();
         }
 
         return $this->publish($property, 'property.approved', $note);
+    }
+
+    /** What every listing needs before it can be reviewed or published. */
+    private function assertComplete(Property $property): void
+    {
+        $missing = [];
+        // A walkthrough video can stand in for photos.
+        if ($property->images()->count() === 0 && ! $property->video_path) {
+            $missing['images'] = ['Add at least one photo or a video first.'];
+        }
+        if (mb_strlen(trim((string) $property->description)) < 30) {
+            $missing['description'] = ['Write a description of at least 30 characters first.'];
+        }
+        if ($missing) {
+            throw ValidationException::withMessages($missing);
+        }
     }
 
     public function reject(Property $property, string $reason): Property

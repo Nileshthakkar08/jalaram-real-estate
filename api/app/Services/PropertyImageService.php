@@ -6,10 +6,12 @@ use App\Models\Property;
 use App\Models\PropertyImage;
 use GdImage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Throwable;
 
 /**
@@ -30,6 +32,12 @@ class PropertyImageService
     private const MAX_PIXELS = 30_000_000;
 
     private const MAX_EDGE = 2000;
+
+    /**
+     * Photos decoded at the same time across all PHP workers. A large photo briefly needs
+     * 60-150 MB; capping parallel work keeps a burst of uploads from exhausting a small server.
+     */
+    public const PROCESSING_SLOTS = 2;
 
     public function __construct(private AuditLogger $audit) {}
 
@@ -60,7 +68,7 @@ class PropertyImageService
                 $created = [];
 
                 foreach ($files as $index => $file) {
-                    [$bytes, $mime, $ext, $width, $height] = $this->sanitize($file, "images.{$index}");
+                    [$bytes, $mime, $ext, $width, $height] = $this->withProcessingSlot(fn () => $this->sanitize($file, "images.{$index}"));
                     $path = "properties/{$property->id}/".Str::uuid()->toString().".{$ext}";
                     Storage::disk($disk)->put($path, $bytes, ['visibility' => 'public']);
                     $written[] = $path;
@@ -127,6 +135,36 @@ class PropertyImageService
                 $image->forceFill(['sort_order' => $position])->save();
             }
         }
+    }
+
+    /**
+     * Runs $work while holding one of PROCESSING_SLOTS shared locks (the cache store's locks are
+     * shared between PHP workers), waiting briefly for a slot when all are busy.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $work
+     * @return T
+     */
+    private function withProcessingSlot(callable $work): mixed
+    {
+        // How long an upload waits for a free slot before asking the owner to try again.
+        $deadline = microtime(true) + (float) config('filesystems.image_processing_wait', 30);
+        do {
+            for ($slot = 0; $slot < self::PROCESSING_SLOTS; $slot++) {
+                $lock = Cache::lock("image-processing-slot:{$slot}", 120);
+                if ($lock->get()) {
+                    try {
+                        return $work();
+                    } finally {
+                        $lock->release();
+                    }
+                }
+            }
+            usleep(200_000);
+        } while (microtime(true) < $deadline);
+
+        throw new HttpException(503, 'Many photos are being uploaded right now. Please try again in a minute.');
     }
 
     /** @return array{0:string,1:string,2:string,3:int,4:int} bytes, mime, extension, width, height */

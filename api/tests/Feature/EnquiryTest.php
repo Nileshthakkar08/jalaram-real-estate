@@ -113,11 +113,26 @@ class EnquiryTest extends TestCase
 
     public function test_enquiries_are_rate_limited(): void
     {
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             $this->postJson('/api/v1/enquiries', ['name' => 'Spam', 'phone' => '98000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT), 'interest' => 'general', 'consent_contact' => true])
                 ->assertSuccessful();
         }
         $this->postJson('/api/v1/enquiries', ['name' => 'Spam', 'phone' => '9800000099', 'interest' => 'general', 'consent_contact' => true])
             ->assertStatus(429);
+    }
+
+    public function test_one_phone_number_is_limited_even_from_different_addresses(): void
+    {
+        $send = fn (string $ip) => $this->withServerVariables(['REMOTE_ADDR' => $ip])
+            ->postJson('/api/v1/enquiries', ['name' => 'Asha', 'phone' => '+91 98250 12345', 'interest' => 'general', 'consent_contact' => true]);
+
+        for ($i = 1; $i <= 5; $i++) {
+            $send("10.0.0.{$i}")->assertSuccessful();
+        }
+        $send('10.0.0.99')->assertStatus(429);
+        // Other people on the same (shared mobile) address are unaffected.
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.1'])
+            ->postJson('/api/v1/enquiries', ['name' => 'Ravi', 'phone' => '9909912345', 'interest' => 'general', 'consent_contact' => true])
+            ->assertSuccessful();
     }
 }

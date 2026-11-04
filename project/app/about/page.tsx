@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowRight, Building2, Handshake, Headphones, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Building2, Handshake, Headphones, ShieldCheck, UserRound } from 'lucide-react';
 import { PublicLayout } from '@/components/site/public-layout';
 import { ContentHero } from '@/components/site/content-page';
 import { BUSINESS } from '@/lib/business';
 
 export const metadata: Metadata = {
   title: 'About Us',
-  description: 'Jalaram Real Estate is a residential property brokerage in Ahmedabad that manages every enquiry, site visit and negotiation for buyers, tenants and owners.',
+  description: 'Jalaram Real Estate is a residential property brokerage in Ahmedabad founded by Nilesh Thakkar. We manage every enquiry, site visit and negotiation for buyers, tenants and owners.',
   alternates: { canonical: '/about' },
 };
 
@@ -63,6 +63,25 @@ export default function AboutPage() {
                   <p className="mt-2 text-sm text-muted-foreground">{p.desc}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="founder" className="scroll-mt-20 border-t border-border bg-card py-16 lg:py-20">
+        <div className="container-mw container-px">
+          <div className="flex max-w-3xl flex-col gap-6 sm:flex-row sm:items-start">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+              <UserRound className="h-8 w-8" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wider text-accent">Our founder</p>
+              <h2 className="mt-1 font-serif text-3xl font-bold">{BUSINESS.founder.name}</h2>
+              <p className="mt-1 text-muted-foreground">{BUSINESS.founder.title}, {BUSINESS.name}</p>
+              <p className="mt-4 text-muted-foreground">
+                {BUSINESS.founder.name} is a software engineer building a real estate business in Ahmedabad. {BUSINESS.name} brings that
+                engineering approach to property: listings are reviewed before they go live, every enquiry is tracked, and buyers,
+                tenants and owners always have one point of contact.
+              </p>
             </div>
           </div>
         </div>

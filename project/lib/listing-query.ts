@@ -14,37 +14,25 @@ export interface FixedFilters {
   type?: string;
 }
 
-/** `all` lists sale and rent together (the /properties page). */
-export type ListingScope = 'sale' | 'rent' | 'all';
-
-export function listingApiQuery(purpose: ListingScope, params: ParamSource, fixed: FixedFilters = {}): string {
+export function listingApiQuery(purpose: 'sale' | 'rent', params: ParamSource, fixed: FixedFilters = {}): string {
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1);
-  const query = new URLSearchParams();
-  if (purpose !== 'all') query.set('purpose', purpose);
-  query.set('sort', params.get('sort') ?? 'newest');
-  query.set('page', String(page));
-  query.set('per_page', String(LISTING_PAGE_SIZE));
-  const filters: [string, string | null | undefined][] = [
-    ['locality', fixed.locality ?? params.get('locality')],
-    ['type', fixed.type ?? params.get('type')],
-    ['bhk', fixed.bhk ?? params.get('bhk')],
-    ['min_price', params.get('min_price')],
-    ['max_price', params.get('max_price')],
-    ['furnishing', params.get('furnishing')],
-    ['q', params.get('q')],
-  ];
-  filters.forEach(([key, value]) => {
-    if (value) query.set(key, value);
+  const query = new URLSearchParams({
+    purpose,
+    sort: params.get('sort') ?? 'newest',
+    page: String(page),
+    per_page: String(LISTING_PAGE_SIZE),
   });
-  return query.toString();
-}
+    const filters: [string, string | null | undefined][] = [
+     ['q', params.get('q')],
+  ];
+   }
 
 /** Adapts Next.js page `searchParams` to the same `get()` interface as URLSearchParams. */
-export function searchParamsSource(searchParams: Record<string, string | string[] | undefined>): ParamSource {
-  return {
-    get: (key) => {
-      const value = searchParams[key];
-      return Array.isArray(value) ? value[0] ?? null : value ?? null;
-    },
-  };
-}
+  export function searchParamsSource(searchParams: Record<string, string | string[] | undefined>): ParamSource {
+    return {
+      get: (key) => {
+        const value = searchParams[key];
+        return Array.isArray(value) ? value[0] ?? null : value ?? null;
+      },
+    };
+  }

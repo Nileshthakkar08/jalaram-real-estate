@@ -2,7 +2,7 @@ import { PublicLayout } from '@/components/site/public-layout';
 import { PropertyCard } from '@/components/site/property-card';
 import { EnquiryForm } from '@/components/site/enquiry-form';
 import { HeroSearch } from '@/components/site/hero-search';
-import { BUSINESS, whatsappLink, callLink } from '@/lib/business';
+import { BUSINESS, businessJsonLd, whatsappLink, callLink } from '@/lib/business';
 import { serverApi } from '@/lib/server-api';
 import {
   MapPin, Home, KeyRound, TrendingUp, ShieldCheck,
@@ -48,6 +48,12 @@ export default async function HomePage() {
 
   return (
     <PublicLayout>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(businessJsonLd(settings, process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000')).replace(/</g, '\\u003c'),
+        }}
+      />
       {/* ===== HERO ===== */}
       <section className="relative overflow-hidden bg-primary">
         <div className="absolute inset-0">

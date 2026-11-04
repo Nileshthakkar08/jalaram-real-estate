@@ -47,6 +47,26 @@ class AdminPropertyController extends Controller
         return OwnerPropertyResource::collection($properties);
     }
 
+    /** A listing added by staff, e.g. for an owner who called in. It starts as a draft owned by the staff member. */
+    public function store(OwnerPropertyRequest $request): JsonResponse
+    {
+        $this->authorize('moderate', Property::class);
+        $extra = $request->validate(['moderation_note' => ['nullable', 'string', 'max:2000']]);
+
+        $property = DB::transaction(function () use ($request, $extra) {
+            $property = Property::create($request->propertyData() + $extra + [
+                'owner_id' => $request->user()->id,
+                'status' => 'draft',
+            ]);
+            $property->amenities()->sync($request->input('amenity_ids', []));
+            $this->audit->log('property.created_by_staff', $property, [], ['title' => $property->title]);
+
+            return $property;
+        });
+
+        return (new OwnerPropertyResource($property->fresh(['locality', 'images', 'amenities', 'owner'])))->response()->setStatusCode(201);
+    }
+
     public function show(Property $property): JsonResponse
     {
         $this->authorize('moderate', $property);

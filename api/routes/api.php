@@ -134,6 +134,7 @@ Route::prefix('v1')->group(function () {
     // ---------- Moderation (admins + team members with properties.moderate; checked by policy) ----------
     Route::prefix('admin')->middleware(['auth:sanctum', 'role:team_member,admin'])->group(function () {
         Route::get('properties', [AdminPropertyController::class, 'index']);
+        Route::post('properties', [AdminPropertyController::class, 'store']);
         Route::get('properties/{property}', [AdminPropertyController::class, 'show']);
         Route::put('properties/{property}', [AdminPropertyController::class, 'update']);
         Route::post('properties/{property}/approve', [AdminPropertyController::class, 'approve']);
