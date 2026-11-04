@@ -142,6 +142,18 @@ class ListingAutoReviewTest extends TestCase
         $this->as($owner)->putJson($url, $payload([]))->assertOk()->assertJsonPath('data.status', 'published');
     }
 
+    public function test_a_video_can_stand_in_for_photos_but_the_listing_waits_for_a_person(): void
+    {
+        $owner = $this->owner();
+        $noMedia = $this->draft($owner, photos: 0);
+        $this->as($owner)->postJson("/api/v1/owner/properties/{$noMedia->id}/submit")
+            ->assertStatus(422)->assertJsonValidationErrors('images');
+
+        $videoOnly = $this->draft($owner, ['video_disk' => 'public', 'video_path' => 'videos/tour.mp4', 'video_mime' => 'video/mp4', 'video_size_bytes' => 1000], photos: 0);
+        $this->submit($owner, $videoOnly)->assertJsonPath('data.status', 'pending');
+        $this->assertStringContainsString('Only 0 photo(s)', implode(' ', $videoOnly->refresh()->review_flags));
+    }
+
     public function test_settings_accept_only_known_modes(): void
     {
         $admin = $this->admin();

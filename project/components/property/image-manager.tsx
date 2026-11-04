@@ -126,7 +126,7 @@ export function ImageManager({ basePath, images, onChange, disabled }: ImageMana
           className="flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-border py-12 text-muted-foreground hover:border-accent"
         >
           <ImagePlus className="h-8 w-8" />
-          <span className="mt-2 text-sm">Add at least one photo before submitting for review</span>
+          <span className="mt-2 text-sm">Add at least one photo (or a video) before submitting for review</span>
         </button>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

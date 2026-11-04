@@ -83,8 +83,9 @@ class PropertyWorkflow
         }
 
         $missing = [];
-        if ($property->images()->count() === 0) {
-            $missing['images'] = ['Add at least one photo before submitting.'];
+        // A walkthrough video can stand in for photos.
+        if ($property->images()->count() === 0 && ! $property->video_path) {
+            $missing['images'] = ['Add at least one photo or a video before submitting.'];
         }
         if (mb_strlen(trim((string) $property->description)) < 30) {
             $missing['description'] = ['Write a description of at least 30 characters before submitting.'];
