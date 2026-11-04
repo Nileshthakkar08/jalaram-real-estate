@@ -60,3 +60,50 @@ export function listingHeading(purpose: Purpose, filters: PathFilters, localityN
   const place = localityName ? `${localityName}, Ahmedabad` : 'Ahmedabad';
   return `${bhkLabel}${noun.charAt(0).toUpperCase()}${noun.slice(1)} for ${purpose === 'sale' ? 'Sale' : 'Rent'} in ${place}`;
 }
+
+/** The fields of a listing that decide which search pages it appears on. */
+export interface ListingFacets {
+  listing_purpose?: string;
+  property_type: string;
+  bedrooms: number | null;
+  locality?: { slug: string } | null;
+}
+
+/** A listing's own area / BHK / type, as search-page filters. */
+export function facetsOf(listing: ListingFacets): PathFilters {
+  const bedrooms = listing.bedrooms ?? 0;
+  return {
+    locality: listing.locality?.slug,
+    bhk: listing.property_type !== 'plot' && bedrooms > 0 ? String(Math.min(bedrooms, 5)) : undefined,
+    type: listing.property_type,
+  };
+}
+
+/** Whether a listing appears on the search page for these filters (same rules as the API). */
+export function matchesFilters(listing: ListingFacets, purpose: Purpose, filters: PathFilters): boolean {
+  if (listing.listing_purpose !== undefined && listing.listing_purpose !== purpose) return false;
+  const own = facetsOf(listing);
+  const { locality, bhk, type } = normalise(filters);
+  return (!locality || own.locality === locality) && (!bhk || own.bhk === bhk) && (!type || own.type === type);
+}
+
+/**
+ * The page Google should index for a search whose results are `listings` (all of them).
+ *
+ * With few listings, several URLs show exactly the same results: if every 2 BHK in Vastral is a
+ * flat, /2-bhk-properties-for-sale-in-vastral-ahmedabad and /2-bhk-flats-for-sale-in-vastral-ahmedabad
+ * are duplicates that split Google's trust. Any area, BHK or type shared by every result is added,
+ * so all duplicates point to the most specific one (which is also how people search: "2 bhk flat in
+ * vastral"). As listings become varied, each page becomes its own canonical again.
+ */
+export function canonicalFilters(filters: PathFilters, listings: ListingFacets[]): PathFilters {
+  const result = normalise(filters);
+  if (listings.length === 0) return result;
+  const facets = listings.map(facetsOf);
+  (['type', 'bhk', 'locality'] as const).forEach((key) => {
+    if (result[key]) return;
+    const first = facets[0][key];
+    if (first && facets.every((f) => f[key] === first)) result[key] = first;
+  });
+  return normalise(result);
+}

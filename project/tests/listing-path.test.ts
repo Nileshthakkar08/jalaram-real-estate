@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listingHeading, listingPath, parseListingSlug } from '@/lib/listing-path';
+import { canonicalFilters, listingHeading, listingPath, matchesFilters, parseListingSlug } from '@/lib/listing-path';
 
 describe('listingPath', () => {
   it('builds clean search URLs', () => {
@@ -42,5 +42,30 @@ describe('listingHeading', () => {
   it('reads naturally', () => {
     expect(listingHeading('rent', { bhk: '3', type: 'apartment' }, 'Shilaj')).toBe('3 BHK Flats for Rent in Shilaj, Ahmedabad');
     expect(listingHeading('sale', { bhk: '5' })).toBe('5+ BHK Properties for Sale in Ahmedabad');
+  });
+});
+
+describe('canonicalFilters', () => {
+  const flat2Vastral = { listing_purpose: 'sale', property_type: 'apartment', bedrooms: 2, locality: { slug: 'vastral' } };
+  const flat3Vastral = { ...flat2Vastral, bedrooms: 3 };
+  const house2Gota = { listing_purpose: 'sale', property_type: 'independent_house', bedrooms: 2, locality: { slug: 'gota' } };
+
+  it('points duplicate pages at the most specific page with the same results', () => {
+    const page = { locality: 'vastral', bhk: '2' };
+    expect(listingPath('sale', canonicalFilters(page, [flat2Vastral]))).toBe('/2-bhk-flats-for-sale-in-vastral-ahmedabad');
+    expect(listingPath('sale', canonicalFilters({ type: 'apartment' }, [flat2Vastral, flat3Vastral]))).toBe('/flats-for-sale-in-vastral-ahmedabad');
+  });
+
+  it('keeps a page canonical when its results differ', () => {
+    expect(canonicalFilters({ bhk: '2' }, [flat2Vastral, house2Gota])).toEqual({ bhk: '2', locality: undefined, type: undefined });
+    expect(canonicalFilters({ locality: 'vastral' }, [])).toEqual({ locality: 'vastral', bhk: undefined, type: undefined });
+  });
+
+  it('never adds a BHK to plots, and matches listings like the API does', () => {
+    const plot = { listing_purpose: 'sale', property_type: 'plot', bedrooms: null, locality: { slug: 'vastral' } };
+    expect(listingPath('sale', canonicalFilters({}, [plot]))).toBe('/plots-for-sale-in-vastral-ahmedabad');
+    expect(matchesFilters({ ...flat2Vastral, bedrooms: 6 }, 'sale', { bhk: '5' })).toBe(true);
+    expect(matchesFilters(flat2Vastral, 'rent', {})).toBe(false);
+    expect(matchesFilters(flat2Vastral, 'sale', { locality: 'gota' })).toBe(false);
   });
 });

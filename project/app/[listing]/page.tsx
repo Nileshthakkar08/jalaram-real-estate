@@ -9,6 +9,7 @@ import { LoadingState } from '@/components/shared/states';
 import { serverApi, ServerApiError } from '@/lib/server-api';
 import { listingApiQuery, searchParamsSource } from '@/lib/listing-query';
 import { listingHeading, listingPath, parseListingSlug } from '@/lib/listing-path';
+import { listingSummary, summaryText } from '@/lib/listing-summary';
 import type { Locality } from '@/lib/types';
 
 /**
@@ -36,31 +37,28 @@ async function resolve(slug: string) {
   return { ...parsed, localityName: locality?.name, localityDescription: locality?.description ?? null };
 }
 
-async function totalFor(purpose: 'sale' | 'rent', filters: { locality?: string; bhk?: string; type?: string }) {
-  const query = listingApiQuery(purpose, { get: () => null }, filters);
-  const result = await serverApi.maybe(serverApi.properties(`?${query}`));
-  return result?.meta.total ?? 0;
-}
-
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const page = await resolve(params.listing).catch(() => null);
   if (!page) return { title: 'Page Not Found', robots: { index: false } };
 
   const filters = { locality: page.locality, bhk: page.bhk, type: page.type };
   const heading = listingHeading(page.purpose, filters, page.localityName);
-  const total = await totalFor(page.purpose, filters);
+  const { total, minPrice, canonical } = await listingSummary(page.purpose, filters);
   const pageNo = Number(searchParamsSource(searchParams).get('page') ?? 1) || 1;
   const path = listingPath(page.purpose, filters);
+  const canonicalPath = listingPath(page.purpose, canonical);
+  const summary = total > 0 ? summaryText(page.purpose, total, minPrice) : null;
 
   return {
-    title: heading,
-    description: total > 0
-      ? `${total} ${heading.charAt(0).toLowerCase()}${heading.slice(1)} listed with Jalaram Real Estate. Listings reviewed by our team; enquiries and site visits handled centrally.`
+    title: summary ? `${heading} – ${summary}` : heading,
+    description: summary
+      ? `${summary}: ${heading.charAt(0).toLowerCase()}${heading.slice(1)}, listed with Jalaram Real Estate. Listings reviewed by our team; enquiries and site visits handled centrally.`
       : `${heading} — listed with Jalaram Real Estate.`,
-    alternates: { canonical: pageNo > 1 ? `${path}?page=${pageNo}` : path },
+    // Pages showing the same listings as a more specific page point Google to that page.
+    alternates: { canonical: pageNo > 1 ? `${canonicalPath}?page=${pageNo}` : canonicalPath },
     // A combination with no live listings has nothing to show: keep it out of the index.
     robots: total === 0 ? { index: false, follow: true } : undefined,
-    openGraph: { title: heading, url: path, type: 'website' },
+    openGraph: { title: summary ? `${heading} – ${summary}` : heading, url: path, type: 'website' },
   };
 }
 

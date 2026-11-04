@@ -9,6 +9,7 @@ import { LoadingState } from '@/components/shared/states';
 import { serverApi, ServerApiError } from '@/lib/server-api';
 import { listingApiQuery, searchParamsSource } from '@/lib/listing-query';
 import { listingPath } from '@/lib/listing-path';
+import { listingSummary } from '@/lib/listing-summary';
 import { cn } from '@/lib/utils';
 
 export const revalidate = 300;
@@ -60,8 +61,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const fallback = defaultPurpose(counts);
   const purpose = chosenPurpose(searchParams, fallback);
   const available = (['sale', 'rent'] as const).filter((p) => counts[p] > 0).map((p) => countLabel(counts[p], p));
-  // The clean search URL (/properties-for-rent-in-shilaj-ahmedabad) is the indexed version of this view.
-  const canonical = listingPath(purpose, { locality: locality.slug });
+  // The clean search URL (/properties-for-rent-in-shilaj-ahmedabad) is the indexed version of this
+  // view, or the more specific page it points to when that shows the same listings.
+  const canonical = listingPath(purpose, (await listingSummary(purpose, { locality: locality.slug })).canonical);
 
   return {
     title: `Property in ${locality.name}, Ahmedabad`,
